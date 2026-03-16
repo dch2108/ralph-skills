@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# setup — Install ralph-skills into Claude Code
+# Creates symlinks so each skill is discoverable as a slash command.
+#
+# Usage: ./setup
+#   Run from the ralph-skills directory after cloning.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILLS_DIR="$(dirname "$SCRIPT_DIR")"
+
+# The skills in this repo
+SKILLS=(review-to-plan ralph-prep setup-feedback)
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo " ralph-skills setup"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Create symlinks for each skill
+for skill in "${SKILLS[@]}"; do
+  target="$SCRIPT_DIR/$skill"
+  link="$SKILLS_DIR/$skill"
+
+  if [ ! -d "$target" ]; then
+    echo "⚠  Skill directory not found: $target (skipping)"
+    continue
+  fi
+
+  if [ -L "$link" ]; then
+    # Symlink exists — update it
+    rm "$link"
+    ln -s "$target" "$link"
+    echo "↻  Updated symlink: $skill"
+  elif [ -d "$link" ]; then
+    echo "⚠  Directory already exists: $link (skipping — remove manually if you want the symlink)"
+  else
+    ln -s "$target" "$link"
+    echo "✓  Linked: $skill"
+  fi
+done
+
+# Make ralph-template.sh executable
+if [ -f "$SCRIPT_DIR/ralph-prep/references/ralph-template.sh" ]; then
+  chmod +x "$SCRIPT_DIR/ralph-prep/references/ralph-template.sh"
+fi
+
+echo ""
+echo "Done. Available skills:"
+echo "  /review-to-plan   — Convert code review findings into a Ralph-ready plan"
+echo "  /ralph-prep       — Prepare environment for a new Ralph loop run"
+echo "  /setup-feedback   — Install typechecker, linter, test runner (run once per project)"
+echo ""
+echo "Verify with: claude then /context"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
