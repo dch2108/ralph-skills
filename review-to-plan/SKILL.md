@@ -1,7 +1,7 @@
 ---
 name: review-to-plan
 metadata:
-  version: '1.1'
+  version: '1.2'
   author: dch2108
 description: >
   Convert code review findings, bug reports, and implementation issues into a
@@ -15,6 +15,17 @@ description: >
 # Review to Plan
 
 Convert code review findings into a focused, Ralph-loop-ready implementation plan.
+
+## Speed Rule
+
+**Do NOT explore the codebase.** This skill is a text-processing job on the user's input — not a code archaeology expedition. Ralph's per-task subagents will locate files and line numbers at execution time. Your job is to describe *what* needs to change and *why*, not *where* exactly in the code it lives.
+
+The only acceptable reads during this skill are:
+- Files the user explicitly points you to (e.g., "see review-notes.md")
+- `gh pr view` if the user asks you to pull PR comments
+- IMPLEMENTATION_PLAN.md / BACKLOG.md if they already exist (to avoid clobbering)
+
+If a review finding already includes file paths or line numbers, include them. If it doesn't, do NOT go searching — write a descriptive enough task that Ralph can find the right place with a simple grep.
 
 ## Philosophy
 
@@ -91,45 +102,20 @@ Create `IMPLEMENTATION_PLAN.md` in the project root with this exact format:
 ### Task 1: [Short title]
 - **Priority:** P0
 - **Status:** TODO
-- **Files:** `src/auth/login.ts`, `src/auth/login.test.ts`
-- **Description:** [2-3 sentences max. What to change and why.]
+- **Area:** [module/layer name — e.g., "auth module", "API handlers", "database layer"]
+- **Files:** [Only if known from the review input. Otherwise omit this line entirely.]
+- **Description:** [2-3 sentences max. What to change and why. Be specific enough that a grep can find the right code.]
 - **Acceptance:** [One concrete check — e.g., "All auth tests pass", "Login no longer throws on empty input"]
-- **Subagent hints:** [Optional. Note if this task benefits from subagent delegation — e.g., "Use subagents to search for all callers of `validateSession()` before modifying its signature"]
-
-### Task 2: [Short title]
-- **Priority:** P1
-- **Status:** TODO
-- **Files:** `src/api/handler.ts`
-- **Description:** [2-3 sentences max.]
-- **Acceptance:** [One concrete check.]
-- **Subagent hints:** [Optional. E.g., "Parallel subagents to update all 6 handler files that import from this module"]
 ```
 
 Rules for the plan:
 
-- **Task descriptions must be specific and actionable.** Bad: "Fix the auth bug." Good: "Add null check for `user.session` in `login.ts:47` before accessing `.token` property."
-- **Always list affected files.** The agent should not have to search the whole repo to find where to work.
+- **Task descriptions must be specific and actionable.** Bad: "Fix the auth bug." Good: "Add null check on `user.session` before accessing `.token` property — currently throws TypeError when session expires."
+- **Include file paths only when already known.** If the review finding mentions a file, include it. If not, describe the area/module and let Ralph locate the files. Do NOT explore the codebase to fill in file paths.
 - **One acceptance criterion per task.** Keep it binary — pass or fail.
 - **Status values:** `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED`
-- **Do NOT include implementation details or code snippets.** The agent figures out the how. The plan specifies the what and where.
-- **Subagent hints are optional but valuable.** Add them when a task involves searching many files, bulk reads, or parallel independent writes. Omit for straightforward single-file changes. See the subagent delegation rules below.
-
-### Subagent delegation guidance
-
-When writing subagent hints, follow Huntley's rule: if the raw output of a task would be large and mostly noise to the primary loop, it should be delegated. Include hints for these patterns:
-
-| Pattern | Subagent hint example |
-|---------|----------------------|
-| Searching/reading many files | "Use subagents to find all usages of `deprecatedFn()` across src/" |
-| Bulk test/build output | "Delegate test run to 1 subagent; summarize pass/fail only" |
-| Studying existing code | "Subagents to study `src/api/` and `src/models/` before changing" |
-| Parallel independent writes | "Parallel subagents to update each route handler file independently" |
-| Updating tracking files | "Subagent to update IMPLEMENTATION_PLAN.md and progress.txt" |
-
-Do NOT suggest subagents for:
-- The core decision of what to implement (that stays in the main loop)
-- The actual implementation code for the chosen task
-- Validation/builds/tests (limit to 1 subagent — never fan out builds)
+- **Do NOT include implementation details or code snippets.** The agent figures out the how. The plan specifies the what and why.
+- **Ralph finds files, you describe intent.** A well-written description like "the counter module double-counts when frames overlap" is more useful than a stale line number that shifts after the first commit.
 
 ### Step 5: Estimate total context budget
 
@@ -158,7 +144,7 @@ When presenting to the user, format as:
 ```
 ## Triage Summary
 - P0 (blocking): 2 items
-- P1 (correctness): 3 items  
+- P1 (correctness): 3 items
 - P2 (quality): 4 items — 2 deferred to backlog
 - P3 (enhancement): 1 item — deferred to backlog
 
