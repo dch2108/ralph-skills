@@ -9,36 +9,32 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_DIR="$(dirname "$SCRIPT_DIR")"
-
-# The skills in this repo
-SKILLS=(review-to-plan ralph-prep setup-feedback update-ralph-skills)
+REPO_NAME="$(basename "$SCRIPT_DIR")"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo " ralph-skills setup"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Create symlinks for each skill
-for skill in "${SKILLS[@]}"; do
-  target="$SCRIPT_DIR/$skill"
-  link="$SKILLS_DIR/$skill"
+# Guard: only create symlinks if we're inside a skills/ directory
+if [ "$(basename "$SKILLS_DIR")" != "skills" ]; then
+  echo "⚠  Not inside a skills/ directory — skipping symlinks."
+  echo "   Expected: ~/.claude/skills/ralph-skills/ or .claude/skills/ralph-skills/"
+  echo "   Got: $SCRIPT_DIR"
+  exit 1
+fi
 
-  if [ ! -d "$target" ]; then
-    echo "⚠  Skill directory not found: $target (skipping)"
-    continue
-  fi
+# Find every subdirectory that contains a SKILL.md and symlink it
+for skill_dir in "$SCRIPT_DIR"/*/; do
+  [ ! -d "$skill_dir" ] && continue
+  skill_name="$(basename "$skill_dir")"
 
-  if [ -L "$link" ]; then
-    # Symlink exists — update it
-    rm "$link"
-    ln -s "$target" "$link"
-    echo "↻  Updated symlink: $skill"
-  elif [ -d "$link" ]; then
-    echo "⚠  Directory already exists: $link (skipping — remove manually if you want the symlink)"
-  else
-    ln -s "$target" "$link"
-    echo "✓  Linked: $skill"
-  fi
+  # Skip non-skill directories
+  [ ! -f "$skill_dir/SKILL.md" ] && continue
+
+  # Create relative symlink: ~/.claude/skills/<name> → ralph-skills/<name>
+  ln -snf "$REPO_NAME/$skill_name" "$SKILLS_DIR/$skill_name"
+  echo "✓  $skill_name"
 done
 
 # Make ralph-template.sh executable
@@ -47,11 +43,5 @@ if [ -f "$SCRIPT_DIR/ralph-prep/references/ralph-template.sh" ]; then
 fi
 
 echo ""
-echo "Done. Available skills:"
-echo "  /review-to-plan        — Convert code review findings into a Ralph-ready plan"
-echo "  /ralph-prep            — Prepare environment for a new Ralph loop run"
-echo "  /setup-feedback        — Install typechecker, linter, test runner (run once per project)"
-echo "  /update-ralph-skills   — Pull latest versions from GitHub"
-echo ""
-echo "Verify with: claude then /context"
+echo "Done. Run /context in Claude Code to verify."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
