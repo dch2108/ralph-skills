@@ -1,5 +1,8 @@
 ---
 name: review-to-plan
+metadata:
+  version: '1.1'
+  author: dch2108
 description: >
   Convert code review findings, bug reports, and implementation issues into a
   Ralph-ready implementation plan. Use when the user says "create a plan from

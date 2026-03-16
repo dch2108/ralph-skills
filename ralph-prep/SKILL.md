@@ -1,5 +1,8 @@
 ---
 name: ralph-prep
+metadata:
+  version: '1.1'
+  author: dch2108
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.
   Validates prerequisites, archives previous runs, ensures the loop script

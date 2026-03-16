@@ -1,5 +1,8 @@
 ---
 name: setup-feedback
+metadata:
+  version: '1.1'
+  author: dch2108
 description: >
   Install and configure feedback loop tooling (typechecker, linter, test runner,
   build command) for a project. Run once per project to set up the backpressure

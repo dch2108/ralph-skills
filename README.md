@@ -7,7 +7,7 @@ Three Claude Code skills for running [Ralph Wiggum](https://github.com/snarktank
 Paste this into Claude Code:
 
 ```
-Install ralph-skills: run `git clone https://github.com/dch2108/ralph-skills.git ~/.claude/skills/ralph-skills && cd ~/.claude/skills/ralph-skills && ./setup` then list the available skills: /review-to-plan, /ralph-prep, /setup-feedback.
+Install ralph-skills: run `git clone https://github.com/dch2108/ralph-skills.git ~/.claude/skills/ralph-skills && cd ~/.claude/skills/ralph-skills && ./setup` then list the available skills: /review-to-plan, /ralph-prep, /setup-feedback, /update-ralph-skills.
 ```
 
 ## Skills
@@ -17,6 +17,7 @@ Install ralph-skills: run `git clone https://github.com/dch2108/ralph-skills.git
 | `/setup-feedback` | Installs typechecker, linter, test runner, build command | Once per project |
 | `/review-to-plan` | Converts code review findings into an implementation plan | Once per review |
 | `/ralph-prep` | Archives old runs, validates AGENTS.md, smoke-tests feedback loops, generates loop script | Once per loop run |
+| `/update-ralph-skills` | Pulls latest from GitHub, re-runs setup, reports version changes | When you want to update |
 
 ## Workflow
 
@@ -47,6 +48,14 @@ cd .claude/skills/ralph-skills && ./setup
 ```
 
 ## Update
+
+From inside Claude Code:
+
+```
+/update-ralph-skills
+```
+
+Or manually:
 
 ```bash
 cd ~/.claude/skills/ralph-skills && git pull && ./setup

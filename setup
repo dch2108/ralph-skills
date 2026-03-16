@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_DIR="$(dirname "$SCRIPT_DIR")"
 
 # The skills in this repo
-SKILLS=(review-to-plan ralph-prep setup-feedback)
+SKILLS=(review-to-plan ralph-prep setup-feedback update-ralph-skills)
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo " ralph-skills setup"
@@ -48,9 +48,10 @@ fi
 
 echo ""
 echo "Done. Available skills:"
-echo "  /review-to-plan   — Convert code review findings into a Ralph-ready plan"
-echo "  /ralph-prep       — Prepare environment for a new Ralph loop run"
-echo "  /setup-feedback   — Install typechecker, linter, test runner (run once per project)"
+echo "  /review-to-plan        — Convert code review findings into a Ralph-ready plan"
+echo "  /ralph-prep            — Prepare environment for a new Ralph loop run"
+echo "  /setup-feedback        — Install typechecker, linter, test runner (run once per project)"
+echo "  /update-ralph-skills   — Pull latest versions from GitHub"
 echo ""
 echo "Verify with: claude then /context"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
