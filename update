@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# update — Pull latest ralph-skills and re-run setup
+#
+# Usage: ./update
+#   Run from anywhere — finds itself via symlink or direct path.
+
+set -euo pipefail
+
+# Resolve to the actual repo directory (works even if called via symlink)
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")" && pwd)"
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo " ralph-skills update"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+cd "$SCRIPT_DIR"
+
+# Check this is actually a git repo
+if [ ! -d ".git" ]; then
+  echo "✗ Not a git repo — this looks like a project-level copy."
+  echo "  Update the global install instead:"
+  echo "  cd ~/.claude/skills/ralph-skills && ./update"
+  exit 1
+fi
+
+# Stash any local changes (shouldn't be any, but just in case)
+if ! git diff --quiet 2>/dev/null; then
+  echo "⚠  Local changes detected — stashing"
+  git stash
+fi
+
+# Pull latest
+echo "↓  Pulling latest..."
+git pull origin main
+
+# Re-run setup to fix any new/changed symlinks
+echo ""
+./setup
