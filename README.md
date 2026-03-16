@@ -4,10 +4,17 @@ Three Claude Code skills for running [Ralph Wiggum](https://github.com/snarktank
 
 ## Install
 
-Paste this into Claude Code:
+Paste into Claude Code:
 
 ```
-Install ralph-skills: run `git clone https://github.com/dch2108/ralph-skills.git ~/.claude/skills/ralph-skills && cd ~/.claude/skills/ralph-skills && ./setup` then list the available skills: /review-to-plan, /ralph-prep, /setup-feedback, /update-ralph-skills.
+Install ralph-skills by executing this in bash: git clone https://github.com/dch2108/ralph-skills.git ~/.claude/skills/ralph-skills && cd ~/.claude/skills/ralph-skills && ./setup
+```
+
+Or run directly in your terminal:
+
+```bash
+git clone https://github.com/dch2108/ralph-skills.git ~/.claude/skills/ralph-skills
+cd ~/.claude/skills/ralph-skills && ./setup
 ```
 
 ## Skills
