@@ -23,7 +23,7 @@
 
 ### Task 3: Update ralph-prep to validate plan schema
 - **Priority:** P1
-- **Status:** TODO
+- **Status:** DONE
 - **Area:** ralph-prep skill
 - **Files:** `ralph-prep/SKILL.md`
 - **Description:** In Step 2 (verify plan), add validation: parse YAML frontmatter, verify task_count matches actual tasks, check each task has required fields per plan-schema.md. Also validate TODO count > 0 — block if all tasks are DONE or plan is empty.

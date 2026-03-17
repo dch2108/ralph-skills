@@ -13,3 +13,11 @@ Task 2: Update review-to-plan to write schema-compliant plans — DONE
 - Bumped skill version to 1.3
 - Files: review-to-plan/SKILL.md (modified)
 - Unblocks: Task 5 (revision loop, same file)
+
+=== ITERATION ===
+Task 3: Update ralph-prep to validate plan schema — DONE
+- Step 2 now validates against references/plan-schema.md
+- Checks: YAML frontmatter, task_count match, required per-task fields, TODO count > 0
+- Bumped ralph-prep version to 1.3
+- Files: ralph-prep/SKILL.md (modified)
+- Unblocks: Task 9 (handoff validation, same file)
