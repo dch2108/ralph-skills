@@ -21,3 +21,11 @@ Task 3: Update ralph-prep to validate plan schema — DONE
 - Bumped ralph-prep version to 1.3
 - Files: ralph-prep/SKILL.md (modified)
 - Unblocks: Task 9 (handoff validation, same file)
+
+=== ITERATION ===
+Task 4: Fix multi-CLI prompt in ralph-template.sh — DONE
+- build_prompt() now accepts CLI type param, branches on it
+- claude: keeps @file syntax; amp/ollama: inlines file contents with BEGIN/END delimiters
+- run_iteration() passes cli arg to build_prompt()
+- Files: ralph-prep/references/ralph-template.sh (modified)
+- Unblocks: Tasks 6, 7 (same file)

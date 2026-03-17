@@ -31,7 +31,7 @@
 
 ### Task 4: Fix multi-CLI prompt in ralph-template.sh
 - **Priority:** P1
-- **Status:** TODO
+- **Status:** DONE
 - **Area:** ralph-prep references
 - **Files:** `ralph-prep/references/ralph-template.sh`
 - **Description:** In `build_prompt()`, branch on CLI type. For `claude`: keep `@file` syntax. For `amp`/`ollama`: inline file contents via `cat $PLAN_FILE` and `cat $PROGRESS_FILE`. The `@file` syntax is Claude Code specific and silently fails on other CLIs.
