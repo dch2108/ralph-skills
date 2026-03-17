@@ -2,7 +2,7 @@
 
 **ralph-skills turns Claude Code into an autonomous coding machine that works while you sleep.**
 
-Four skills for running [Ralph Wiggum](https://ghuntley.com/agent/) autonomous coding loops in [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Plan your work from review findings, validate the environment, generate the loop script, and let the agent ship tasks one at a time — each in a fresh context window, with feedback loops as backpressure.
+Four skills for running [Ralph Wiggum](https://grokipedia.com/page/Ralph_Wiggum) autonomous coding loops in [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Plan your work from review findings, validate the environment, generate the loop script, and let the agent ship tasks one at a time — each in a fresh context window, with feedback loops as backpressure.
 
 Based on [Geoffrey Huntley's methodology](https://www.youtube.com/watch?v=4Nna09dG_c0).
 
