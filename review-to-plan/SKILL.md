@@ -122,6 +122,11 @@ Show the user:
 
 Do NOT write files to disk until the user approves. Present the plan contents in the conversation first.
 
+**Revision loop:** Say "approved" to write files, or describe changes. Revise and re-present until the user approves or says stop. On each revision:
+- Apply only the requested changes — do not re-triage or re-scope unless asked.
+- Re-check the context budget (Step 5) after edits.
+- Re-present the updated plan in the same format above.
+
 ## Output Format Example
 
 When presenting to the user, format as:
