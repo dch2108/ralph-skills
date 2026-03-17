@@ -1,7 +1,7 @@
 ---
 name: ralph-prep
 metadata:
-  version: '1.3'
+  version: '1.4'
   author: dch2108
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.
@@ -125,18 +125,27 @@ Ask the user to fill in the build/test/typecheck/lint commands for their project
 
 ### Step 4: Validate or create the loop script
 
-Check for `ralph.sh` (or `loop.sh`) in the project root or `scripts/` directory.
+Scan the project root and `scripts/` directory for **any** existing loop scripts. Check all variants:
+- `ralph.sh`, `ralph.py`, `ralph.js`, `ralph.ts`
+- `loop.sh`, `loop.py`, `loop.js`, `loop.ts`
 
-**If it exists**, validate:
+**If one or more exist**, validate each:
 
-1. It reads from `IMPLEMENTATION_PLAN.md` (or the plan file the user is using)
+1. It reads from `IMPLEMENTATION_PLAN.md` (not `prd.json`, `TODO.md`, or other plan formats)
 2. It passes `progress.txt` to the agent
 3. It includes the `<promise>COMPLETE</promise>` exit condition (or equivalent)
 4. It commits after each iteration
 
-Report any issues found.
+**If the existing script is incompatible** (wrong plan file, missing features, or written for a different workflow):
+1. Archive it: `mv ralph.py archive/ralph-prep-backup/ralph.py.bak` (create directory if needed)
+2. Tell the user: "Archived incompatible `ralph.py` (was reading `prd.json` instead of `IMPLEMENTATION_PLAN.md`). Generating a fresh `ralph.sh` from the template."
+3. Generate the new script (see below).
 
-**If it does NOT exist**, generate one. Detect the environment:
+**Do NOT leave incompatible loop scripts in place.** ralph-prep's job is to leave the environment ready, not to flag issues for the user to fix manually.
+
+**If a compatible `ralph.sh` already exists**, keep it. Report: "Existing ralph.sh is compatible. No changes needed."
+
+**If no loop script exists** (or the old one was archived), generate one. Detect the environment:
 
 ```bash
 # Check for Docker availability
@@ -264,8 +273,8 @@ Help the user trim it. Common cuts:
 - Remove tool-specific instructions that the CLI already knows
 - Consolidate verbose sections into terse command lists
 
-### Problem: Previous ralph.sh uses a different plan file format
-If the existing script references `prd.json` instead of `IMPLEMENTATION_PLAN.md`, ask the user which format to use. Update the script accordingly. Both formats work — consistency within a project matters more than format choice.
+### Problem: Previous loop script uses a different plan file format
+If an existing loop script references `prd.json`, `TODO.md`, or another format instead of `IMPLEMENTATION_PLAN.md`, Step 4 will archive the old script and generate a fresh `ralph.sh` from the template. The user does not need to intervene — ralph-prep handles this automatically.
 
 ### Problem: Docker is not available but user wants AFK mode
 Warn: "AFK mode without Docker runs the agent with full system access. Ensure you have good backups and the agent cannot access sensitive directories. Consider using `--dangerously-skip-permissions` only with a clean git state so you can revert."
