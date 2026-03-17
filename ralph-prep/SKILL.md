@@ -1,7 +1,7 @@
 ---
 name: ralph-prep
 metadata:
-  version: '1.2'
+  version: '1.3'
   author: dch2108
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.
@@ -55,14 +55,22 @@ Look for these files in the project root:
 
 **If no previous artifacts exist**, skip to Step 2.
 
-### Step 2: Verify the implementation plan exists
+### Step 2: Verify and validate the implementation plan
 
 Check that `IMPLEMENTATION_PLAN.md` exists in the project root.
 
-- If it exists, report the task count and confirm with the user: "Found plan with N tasks. Proceed with prep?"
-- If it does NOT exist, tell the user: "No IMPLEMENTATION_PLAN.md found. Run `/review-to-plan` first to create one from your review findings."
+- If it does NOT exist, tell the user: "No IMPLEMENTATION_PLAN.md found. Run `/review-to-plan` first to create one from your review findings." Do NOT proceed.
 
-Do NOT proceed without a plan file.
+**If it exists, validate against [references/plan-schema.md](../references/plan-schema.md):**
+
+1. **Parse YAML frontmatter.** Confirm the plan has a YAML frontmatter block (between `---` delimiters) containing: `plan_version`, `task_count`, `created`, `fields_used`. Flag any missing fields.
+2. **Verify task_count.** Count the actual `### Task N:` headings. If the count does not match `task_count` in the frontmatter, block and report the mismatch.
+3. **Validate per-task fields.** For each task, check that all required fields are present: **Priority**, **Status**, **Area**, **Description**, **Acceptance**. Report any tasks missing required fields.
+4. **Check TODO count > 0.** Count tasks with `Status: TODO` or `Status: IN PROGRESS`. If zero (all tasks are DONE or the plan is empty), block: "All tasks are DONE — nothing for Ralph to work on. Create a new plan with `/review-to-plan` or add tasks manually."
+
+If all checks pass, report: "Found valid plan with N tasks (M remaining). Proceed with prep?"
+
+Do NOT proceed if any validation check fails.
 
 ### Step 3: Validate AGENTS.md
 
