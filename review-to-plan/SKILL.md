@@ -1,7 +1,7 @@
 ---
 name: review-to-plan
 metadata:
-  version: '1.2'
+  version: '1.3'
   author: dch2108
 description: >
   Convert code review findings, bug reports, and implementation issues into a
@@ -88,33 +88,18 @@ Items deferred from review on [DATE]. Pick these up in a future Ralph run.
 
 ### Step 4: Write the implementation plan
 
-Create `IMPLEMENTATION_PLAN.md` in the project root with this exact format:
+Create `IMPLEMENTATION_PLAN.md` in the project root following the format defined in `references/plan-schema.md`.
 
-```markdown
-# Implementation Plan
+Key points:
 
-> Source: [describe origin — e.g., "PR #42 review comments", "security audit 2026-03-15"]
-> Created: [DATE]
-> Status: NOT STARTED
+- The plan **must** start with YAML frontmatter (`plan_version`, `task_count`, `created`, `fields_used`).
+- `task_count` in frontmatter must match the actual number of `### Task N:` headings.
+- See `references/plan-schema.md` for the full document structure, per-task fields, and rules.
 
-## Tasks
-
-### Task 1: [Short title]
-- **Priority:** P0
-- **Status:** TODO
-- **Area:** [module/layer name — e.g., "auth module", "API handlers", "database layer"]
-- **Files:** [Only if known from the review input. Otherwise omit this line entirely.]
-- **Description:** [2-3 sentences max. What to change and why. Be specific enough that a grep can find the right code.]
-- **Acceptance:** [One concrete check — e.g., "All auth tests pass", "Login no longer throws on empty input"]
-```
-
-Rules for the plan:
+Additional guidance for this skill:
 
 - **Task descriptions must be specific and actionable.** Bad: "Fix the auth bug." Good: "Add null check on `user.session` before accessing `.token` property — currently throws TypeError when session expires."
 - **Include file paths only when already known.** If the review finding mentions a file, include it. If not, describe the area/module and let Ralph locate the files. Do NOT explore the codebase to fill in file paths.
-- **One acceptance criterion per task.** Keep it binary — pass or fail.
-- **Status values:** `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED`
-- **Do NOT include implementation details or code snippets.** The agent figures out the how. The plan specifies the what and why.
 - **Ralph finds files, you describe intent.** A well-written description like "the counter module double-counts when frames overlap" is more useful than a stale line number that shifts after the first commit.
 
 ### Step 5: Estimate total context budget
@@ -137,6 +122,11 @@ Show the user:
 
 Do NOT write files to disk until the user approves. Present the plan contents in the conversation first.
 
+**Revision loop:** Say "approved" to write files, or describe changes. Revise and re-present until the user approves or says stop. On each revision:
+- Apply only the requested changes — do not re-triage or re-scope unless asked.
+- Re-check the context budget (Step 5) after edits.
+- Re-present the updated plan in the same format above.
+
 ## Output Format Example
 
 When presenting to the user, format as:
@@ -149,7 +139,7 @@ When presenting to the user, format as:
 - P3 (enhancement): 1 item — deferred to backlog
 
 ## Implementation Plan (7 tasks)
-[full plan content]
+[full plan content, starting with YAML frontmatter per references/plan-schema.md]
 
 ## Backlog (3 items deferred)
 [backlog content]

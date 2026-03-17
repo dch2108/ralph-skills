@@ -50,8 +50,28 @@ detect_docker() {
 
 # --- Build the prompt ---
 build_prompt() {
+  local cli="${1:-claude}"
+
+  # File injection: @file syntax is Claude Code-specific.
+  # Other CLIs need file contents inlined.
+  local file_header
+  if [ "$cli" = "claude" ]; then
+    file_header="@${PLAN_FILE} @${PROGRESS_FILE}"
+  else
+    file_header="$(cat <<FILES
+--- BEGIN ${PLAN_FILE} ---
+$(cat "$PLAN_FILE")
+--- END ${PLAN_FILE} ---
+
+--- BEGIN ${PROGRESS_FILE} ---
+$(cat "$PROGRESS_FILE")
+--- END ${PROGRESS_FILE} ---
+FILES
+)"
+  fi
+
   cat <<PROMPT
-@${PLAN_FILE} @${PROGRESS_FILE}
+${file_header}
 
 1. Study the IMPLEMENTATION_PLAN.md. Pick the single most important TODO task.
    Prioritize: blocked dependencies first, then highest priority (P0 > P1 > P2).
@@ -75,7 +95,9 @@ build_prompt() {
    referencing the task title.
 
 6. Use a subagent to update IMPLEMENTATION_PLAN.md (set task to DONE)
-   and append to progress.txt:
+   and append to progress.txt. Start each entry with a line containing
+   only: === ITERATION ===
+   Then include:
    - Task completed and reference
    - Key decisions made
    - Files changed
@@ -95,7 +117,7 @@ run_iteration() {
   local cli="$1"
   local docker_available="$2"
   local prompt
-  prompt="$(build_prompt)"
+  prompt="$(build_prompt "$cli")"
 
   case "$cli" in
     claude)
@@ -139,6 +161,9 @@ main() {
   # Create progress file if missing
   [ ! -f "$PROGRESS_FILE" ] && touch "$PROGRESS_FILE"
 
+  # Create failures log
+  touch ralph-failures.log
+
   local branch
   branch="$(git branch --show-current)"
 
@@ -155,9 +180,38 @@ main() {
     echo "======================== ITERATION $i / $MAX_ITERATIONS ========================"
     echo ""
 
+    # Record HEAD before iteration for failure detection
+    local head_before
+    head_before="$(git rev-parse HEAD)"
+
     local result
     result="$(run_iteration "$cli" "$docker_available")"
     echo "$result"
+
+    # Detect failed iterations (no commit produced)
+    local head_after
+    head_after="$(git rev-parse HEAD)"
+    if [ "$head_before" = "$head_after" ]; then
+      local dirty
+      dirty="$(git status --porcelain 2>/dev/null)"
+      if [ -n "$dirty" ]; then
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) iteration=$i uncommitted-changes" >> ralph-failures.log
+      else
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) iteration=$i no-change" >> ralph-failures.log
+      fi
+    fi
+
+    # Sliding window: keep only the last 3 progress blocks
+    # Each block starts with "=== ITERATION ==="
+    local block_count
+    block_count="$(grep -c '^=== ITERATION ===$' "$PROGRESS_FILE" 2>/dev/null || echo 0)"
+    if [ "$block_count" -gt 3 ]; then
+      local skip=$((block_count - 3))
+      awk -v skip="$skip" '
+        /^=== ITERATION ===$/ { count++ }
+        count > skip { print }
+      ' "$PROGRESS_FILE" > "${PROGRESS_FILE}.tmp" && mv "${PROGRESS_FILE}.tmp" "$PROGRESS_FILE"
+    fi
 
     # Push after each iteration
     git push origin "$branch" 2>/dev/null || true

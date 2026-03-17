@@ -1,7 +1,7 @@
 ---
 name: ralph-prep
 metadata:
-  version: '1.1'
+  version: '1.4'
   author: dch2108
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.
@@ -55,14 +55,22 @@ Look for these files in the project root:
 
 **If no previous artifacts exist**, skip to Step 2.
 
-### Step 2: Verify the implementation plan exists
+### Step 2: Verify and validate the implementation plan
 
 Check that `IMPLEMENTATION_PLAN.md` exists in the project root.
 
-- If it exists, report the task count and confirm with the user: "Found plan with N tasks. Proceed with prep?"
-- If it does NOT exist, tell the user: "No IMPLEMENTATION_PLAN.md found. Run `/review-to-plan` first to create one from your review findings."
+- If it does NOT exist, tell the user: "No IMPLEMENTATION_PLAN.md found. Run `/review-to-plan` first to create one from your review findings." Do NOT proceed.
 
-Do NOT proceed without a plan file.
+**If it exists, validate against [references/plan-schema.md](../references/plan-schema.md):**
+
+1. **Parse YAML frontmatter.** Confirm the plan has a YAML frontmatter block (between `---` delimiters) containing: `plan_version`, `task_count`, `created`, `fields_used`. Flag any missing fields.
+2. **Verify task_count.** Count the actual `### Task N:` headings. If the count does not match `task_count` in the frontmatter, block and report the mismatch.
+3. **Validate per-task fields.** For each task, check that all required fields are present: **Priority**, **Status**, **Area**, **Description**, **Acceptance**. Report any tasks missing required fields.
+4. **Check TODO count > 0.** Count tasks with `Status: TODO` or `Status: IN PROGRESS`. If zero (all tasks are DONE or the plan is empty), block: "All tasks are DONE — nothing for Ralph to work on. Create a new plan with `/review-to-plan` or add tasks manually."
+
+If all checks pass, report: "Found valid plan with N tasks (M remaining). Proceed with prep?"
+
+Do NOT proceed if any validation check fails.
 
 ### Step 3: Validate AGENTS.md
 
@@ -117,18 +125,27 @@ Ask the user to fill in the build/test/typecheck/lint commands for their project
 
 ### Step 4: Validate or create the loop script
 
-Check for `ralph.sh` (or `loop.sh`) in the project root or `scripts/` directory.
+Scan the project root and `scripts/` directory for **any** existing loop scripts. Check all variants:
+- `ralph.sh`, `ralph.py`, `ralph.js`, `ralph.ts`
+- `loop.sh`, `loop.py`, `loop.js`, `loop.ts`
 
-**If it exists**, validate:
+**If one or more exist**, validate each:
 
-1. It reads from `IMPLEMENTATION_PLAN.md` (or the plan file the user is using)
+1. It reads from `IMPLEMENTATION_PLAN.md` (not `prd.json`, `TODO.md`, or other plan formats)
 2. It passes `progress.txt` to the agent
 3. It includes the `<promise>COMPLETE</promise>` exit condition (or equivalent)
 4. It commits after each iteration
 
-Report any issues found.
+**If the existing script is incompatible** (wrong plan file, missing features, or written for a different workflow):
+1. Archive it: `mv ralph.py archive/ralph-prep-backup/ralph.py.bak` (create directory if needed)
+2. Tell the user: "Archived incompatible `ralph.py` (was reading `prd.json` instead of `IMPLEMENTATION_PLAN.md`). Generating a fresh `ralph.sh` from the template."
+3. Generate the new script (see below).
 
-**If it does NOT exist**, generate one. Detect the environment:
+**Do NOT leave incompatible loop scripts in place.** ralph-prep's job is to leave the environment ready, not to flag issues for the user to fix manually.
+
+**If a compatible `ralph.sh` already exists**, keep it. Report: "Existing ralph.sh is compatible. No changes needed."
+
+**If no loop script exists** (or the old one was archived), generate one. Detect the environment:
 
 ```bash
 # Check for Docker availability
@@ -164,14 +181,18 @@ $CLI -p ...
 
 Make the script executable: `chmod +x ralph.sh`
 
-### Step 5: Smoke-test feedback loops
+### Step 5: Validate feedback loops
 
-Ralph without feedback loops produces broken code silently. This step does NOT install tooling — it verifies that what's listed in AGENTS.md actually works. Tooling installation is a one-time project setup concern; use `/setup-feedback` for that.
+Ralph without feedback loops produces broken code silently. This is the safety gate — **if feedback loops don't work, ralph.sh will NOT be generated.**
+
+This step does NOT install tooling — it verifies that what's listed in AGENTS.md actually works. Tooling installation is a one-time project setup concern; use `/setup-feedback` for that.
+
+**If AGENTS.md has no Feedback Loops section:** STOP. Tell the user: "AGENTS.md has no feedback loop commands. Run `/setup-feedback` to configure project tooling, then re-run `/ralph-prep`." Do NOT proceed.
 
 Read the `## Feedback Loops` section from AGENTS.md. For each command listed:
 
-1. Run it.
-2. Record: pass, fail (with errors), or command not found.
+1. Run it with a timeout (use `timeout 120` or equivalent to prevent watch-mode hangs).
+2. Record: pass, fail (with errors), command not found, or timed out.
 
 Report results as a table:
 
@@ -184,20 +205,20 @@ Report results as a table:
 | Build | npm run build | ✓ success |
 ```
 
-**If any command returns "not found":** Stop. Tell the user: "Feedback command `[command]` is listed in AGENTS.md but is not installed. Run `/setup-feedback` to install project tooling before prepping the loop."
+**If any command returns "not found":** STOP. Tell the user: "Feedback command `[command]` is listed in AGENTS.md but is not installed. Run `/setup-feedback` to install project tooling before prepping the loop." Do NOT generate ralph.sh.
+
+**If any command times out:** STOP. Tell the user: "`[command]` did not complete within 120 seconds — it may be running in watch mode. Update the command in AGENTS.md to run once and exit (e.g., `vitest run` instead of `vitest`)." Do NOT generate ralph.sh.
 
 **If any command fails (but exists):** Warn: "[Tool] has existing failures. Ralph will try to fix these AND your plan tasks — this may cause confusion. Recommend fixing existing failures first." Let the user decide whether to proceed.
 
-**If AGENTS.md has no Feedback Loops section:** Stop. Tell the user: "AGENTS.md has no feedback loop commands. Run `/setup-feedback` to configure project tooling, then re-run `/ralph-prep`."
+**Auto-fix AGENTS.md:** If the commands in AGENTS.md don't match what actually works (e.g., lists `npm run typecheck` but the real command is `npx tsc --noEmit`), fix AGENTS.md to match reality. This is cleanup, not a blocking issue.
 
-### Step 6: Verify AGENTS.md feedback section
-
-Confirm the feedback section is terse and correct — exact commands only, no explanations. It should look like:
+The feedback section should be terse — exact commands only, no explanations:
 
 ```markdown
 ## Feedback Loops (run before every commit)
 1. Typecheck: `npm run typecheck`
-2. Tests: `npm test`  
+2. Tests: `npm test`
 3. Lint: `npm run lint`
 4. Build: `npm run build`
 
@@ -205,20 +226,14 @@ Do NOT commit if any of these fail. Fix the failure first.
 Delegate test/build output to 1 subagent — return only pass/fail + failure names and errors.
 ```
 
-If commands in AGENTS.md don't match what actually works (e.g., lists `npm run typecheck` but the real command is `npx tsc --noEmit`), fix AGENTS.md to match reality.
-
-### Step 6b: Verify AGENTS.md subagent section
-
-Ensure `AGENTS.md` contains a `## Subagent Rules` section. If missing, add the one from the template above. If present, audit it:
+**Verify AGENTS.md subagent section:** Ensure `AGENTS.md` contains a `## Subagent Rules` section. If missing, add the one from the template above. If present, audit it:
 
 - It should NOT instruct the agent to delegate task selection or implementation decisions
 - It SHOULD instruct the agent to use subagents for codebase search, studying source, and test result summarization
 - Build/test subagents must be capped at 1 (never fan out builds — hundreds of result summaries flood the primary context)
 - It should be 4-8 lines max — terse rules, not explanations
 
-The subagent section is the highest-leverage addition to AGENTS.md for context hygiene. Without it, the main loop will read dozens of files directly, burning context on raw rg output instead of summaries.
-
-### Step 7: Final readiness report
+### Step 6: Final readiness report
 
 Present a summary:
 
@@ -249,7 +264,7 @@ If any check fails, mark it with ✗ and explain what needs to be fixed before t
 ## Troubleshooting
 
 ### Problem: No test suite exists
-Ralph without tests is dangerous. Tell the user to run `/setup-feedback` to install a test runner and configure feedback loops. For HITL mode, proceeding without tests is acceptable but risky — note this clearly.
+Ralph without tests is dangerous. Feedback validation (Step 5) will block ralph.sh generation if tests are missing. Tell the user to run `/setup-feedback` to install a test runner and configure feedback loops, then re-run `/ralph-prep`.
 
 ### Problem: AGENTS.md is over 800 words
 Help the user trim it. Common cuts:
@@ -258,8 +273,8 @@ Help the user trim it. Common cuts:
 - Remove tool-specific instructions that the CLI already knows
 - Consolidate verbose sections into terse command lists
 
-### Problem: Previous ralph.sh uses a different plan file format
-If the existing script references `prd.json` instead of `IMPLEMENTATION_PLAN.md`, ask the user which format to use. Update the script accordingly. Both formats work — consistency within a project matters more than format choice.
+### Problem: Previous loop script uses a different plan file format
+If an existing loop script references `prd.json`, `TODO.md`, or another format instead of `IMPLEMENTATION_PLAN.md`, Step 4 will archive the old script and generate a fresh `ralph.sh` from the template. The user does not need to intervene — ralph-prep handles this automatically.
 
 ### Problem: Docker is not available but user wants AFK mode
 Warn: "AFK mode without Docker runs the agent with full system access. Ensure you have good backups and the agent cannot access sensitive directories. Consider using `--dangerously-skip-permissions` only with a clean git state so you can revert."
