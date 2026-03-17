@@ -15,7 +15,7 @@
 
 ### Task 2: Update review-to-plan to write schema-compliant plans
 - **Priority:** P1
-- **Status:** TODO
+- **Status:** DONE
 - **Area:** review-to-plan skill
 - **Files:** `review-to-plan/SKILL.md`
 - **Description:** Update Step 4 to reference `references/plan-schema.md` for the plan format instead of defining it inline. Output plans must include YAML frontmatter. Remove the inline format definition to avoid duplication.

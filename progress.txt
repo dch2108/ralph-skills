@@ -3,3 +3,13 @@ Task 1: Create shared plan format schema — DONE
 - Created references/plan-schema.md with YAML frontmatter spec and per-task field definitions
 - Files: references/plan-schema.md (new)
 - Unblocks Tasks 2, 3, 9
+
+=== ITERATION ===
+Task 2: Update review-to-plan to write schema-compliant plans — DONE
+- Replaced inline format definition in Step 4 with reference to references/plan-schema.md
+- Added YAML frontmatter requirement to key points
+- Updated example output to mention frontmatter
+- Removed duplicated rules already in plan-schema.md (3 of 6 kept, 3 removed as redundant)
+- Bumped skill version to 1.3
+- Files: review-to-plan/SKILL.md (modified)
+- Unblocks: Task 5 (revision loop, same file)
