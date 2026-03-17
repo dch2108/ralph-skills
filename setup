@@ -24,15 +24,39 @@ if [ "$(basename "$SKILLS_DIR")" != "skills" ]; then
   exit 1
 fi
 
-# Find every subdirectory that contains a SKILL.md and symlink it
+# Build the set of valid skill names from current SKILL.md directories
+valid_skills=()
 for skill_dir in "$SCRIPT_DIR"/*/; do
   [ ! -d "$skill_dir" ] && continue
   skill_name="$(basename "$skill_dir")"
-
-  # Skip non-skill directories
   [ ! -f "$skill_dir/SKILL.md" ] && continue
+  valid_skills+=("$skill_name")
+done
 
-  # Create relative symlink: ~/.claude/skills/<name> → ralph-skills/<name>
+# Remove stale symlinks: any symlink in SKILLS_DIR that points into this repo
+# but no longer corresponds to a current skill directory
+for existing_link in "$SKILLS_DIR"/*/; do
+  [ ! -L "${existing_link%/}" ] && continue
+  link_name="$(basename "${existing_link%/}")"
+  link_target="$(readlink "${existing_link%/}" 2>/dev/null || true)"
+
+  # Only manage symlinks that point into this repo
+  [[ "$link_target" != "$REPO_NAME/"* ]] && continue
+
+  # Check if it's still a valid skill
+  still_valid=false
+  for s in "${valid_skills[@]}"; do
+    [ "$s" = "$link_name" ] && still_valid=true && break
+  done
+
+  if [ "$still_valid" = false ]; then
+    rm -f "${existing_link%/}"
+    echo "✗  $link_name (removed — skill renamed or deleted)"
+  fi
+done
+
+# Create/update symlinks for all current skills
+for skill_name in "${valid_skills[@]}"; do
   ln -snf "$REPO_NAME/$skill_name" "$SKILLS_DIR/$skill_name"
   echo "✓  $skill_name"
 done
