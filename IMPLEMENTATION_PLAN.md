@@ -47,7 +47,7 @@
 
 ### Task 6: Add progress.txt sliding window
 - **Priority:** P1
-- **Status:** TODO
+- **Status:** DONE
 - **Area:** ralph-prep references
 - **Files:** `ralph-prep/references/ralph-template.sh`
 - **Description:** Update `build_prompt()` to instruct Ralph: "Start each progress entry with a line containing only `=== ITERATION ===`". After each iteration in the main loop, count delimiter lines in progress.txt and keep only the last 3 blocks via awk truncation.

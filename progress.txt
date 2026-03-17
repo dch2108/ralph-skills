@@ -35,3 +35,10 @@ Task 5: Add revision loop to review-to-plan — DONE
 - Added revision loop instructions to Step 6: revise and re-present until approved
 - Kept it minimal: apply changes, re-check budget, re-present
 - Files: review-to-plan/SKILL.md (modified)
+
+=== ITERATION ===
+Task 6: Add progress.txt sliding window — DONE
+- build_prompt() now instructs Ralph to prefix entries with === ITERATION === delimiter
+- Main loop counts delimiter blocks after each iteration, keeps only last 3 via awk truncation
+- Atomic write: awk to .tmp then mv
+- Files: ralph-prep/references/ralph-template.sh (modified)
