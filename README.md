@@ -4,7 +4,7 @@
 
 Four skills for running [Ralph Wiggum](https://ghuntley.com/agent/) autonomous coding loops in [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Plan your work from review findings, validate the environment, generate the loop script, and let the agent ship tasks one at a time — each in a fresh context window, with feedback loops as backpressure.
 
-Based on [Geoffrey Huntley's methodology](https://ghuntley.com/agent/).
+Based on [Geoffrey Huntley's methodology](https://www.youtube.com/watch?v=4Nna09dG_c0).
 
 ### Without ralph-skills
 
