@@ -1,7 +1,7 @@
 ---
 name: ralph-prep
 metadata:
-  version: '1.1'
+  version: '1.2'
   author: dch2108
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.
@@ -164,14 +164,18 @@ $CLI -p ...
 
 Make the script executable: `chmod +x ralph.sh`
 
-### Step 5: Smoke-test feedback loops
+### Step 5: Validate feedback loops
 
-Ralph without feedback loops produces broken code silently. This step does NOT install tooling — it verifies that what's listed in AGENTS.md actually works. Tooling installation is a one-time project setup concern; use `/setup-feedback` for that.
+Ralph without feedback loops produces broken code silently. This is the safety gate — **if feedback loops don't work, ralph.sh will NOT be generated.**
+
+This step does NOT install tooling — it verifies that what's listed in AGENTS.md actually works. Tooling installation is a one-time project setup concern; use `/setup-feedback` for that.
+
+**If AGENTS.md has no Feedback Loops section:** STOP. Tell the user: "AGENTS.md has no feedback loop commands. Run `/setup-feedback` to configure project tooling, then re-run `/ralph-prep`." Do NOT proceed.
 
 Read the `## Feedback Loops` section from AGENTS.md. For each command listed:
 
-1. Run it.
-2. Record: pass, fail (with errors), or command not found.
+1. Run it with a timeout (use `timeout 120` or equivalent to prevent watch-mode hangs).
+2. Record: pass, fail (with errors), command not found, or timed out.
 
 Report results as a table:
 
@@ -184,20 +188,20 @@ Report results as a table:
 | Build | npm run build | ✓ success |
 ```
 
-**If any command returns "not found":** Stop. Tell the user: "Feedback command `[command]` is listed in AGENTS.md but is not installed. Run `/setup-feedback` to install project tooling before prepping the loop."
+**If any command returns "not found":** STOP. Tell the user: "Feedback command `[command]` is listed in AGENTS.md but is not installed. Run `/setup-feedback` to install project tooling before prepping the loop." Do NOT generate ralph.sh.
+
+**If any command times out:** STOP. Tell the user: "`[command]` did not complete within 120 seconds — it may be running in watch mode. Update the command in AGENTS.md to run once and exit (e.g., `vitest run` instead of `vitest`)." Do NOT generate ralph.sh.
 
 **If any command fails (but exists):** Warn: "[Tool] has existing failures. Ralph will try to fix these AND your plan tasks — this may cause confusion. Recommend fixing existing failures first." Let the user decide whether to proceed.
 
-**If AGENTS.md has no Feedback Loops section:** Stop. Tell the user: "AGENTS.md has no feedback loop commands. Run `/setup-feedback` to configure project tooling, then re-run `/ralph-prep`."
+**Auto-fix AGENTS.md:** If the commands in AGENTS.md don't match what actually works (e.g., lists `npm run typecheck` but the real command is `npx tsc --noEmit`), fix AGENTS.md to match reality. This is cleanup, not a blocking issue.
 
-### Step 6: Verify AGENTS.md feedback section
-
-Confirm the feedback section is terse and correct — exact commands only, no explanations. It should look like:
+The feedback section should be terse — exact commands only, no explanations:
 
 ```markdown
 ## Feedback Loops (run before every commit)
 1. Typecheck: `npm run typecheck`
-2. Tests: `npm test`  
+2. Tests: `npm test`
 3. Lint: `npm run lint`
 4. Build: `npm run build`
 
@@ -205,20 +209,14 @@ Do NOT commit if any of these fail. Fix the failure first.
 Delegate test/build output to 1 subagent — return only pass/fail + failure names and errors.
 ```
 
-If commands in AGENTS.md don't match what actually works (e.g., lists `npm run typecheck` but the real command is `npx tsc --noEmit`), fix AGENTS.md to match reality.
-
-### Step 6b: Verify AGENTS.md subagent section
-
-Ensure `AGENTS.md` contains a `## Subagent Rules` section. If missing, add the one from the template above. If present, audit it:
+**Verify AGENTS.md subagent section:** Ensure `AGENTS.md` contains a `## Subagent Rules` section. If missing, add the one from the template above. If present, audit it:
 
 - It should NOT instruct the agent to delegate task selection or implementation decisions
 - It SHOULD instruct the agent to use subagents for codebase search, studying source, and test result summarization
 - Build/test subagents must be capped at 1 (never fan out builds — hundreds of result summaries flood the primary context)
 - It should be 4-8 lines max — terse rules, not explanations
 
-The subagent section is the highest-leverage addition to AGENTS.md for context hygiene. Without it, the main loop will read dozens of files directly, burning context on raw rg output instead of summaries.
-
-### Step 7: Final readiness report
+### Step 6: Final readiness report
 
 Present a summary:
 
@@ -249,7 +247,7 @@ If any check fails, mark it with ✗ and explain what needs to be fixed before t
 ## Troubleshooting
 
 ### Problem: No test suite exists
-Ralph without tests is dangerous. Tell the user to run `/setup-feedback` to install a test runner and configure feedback loops. For HITL mode, proceeding without tests is acceptable but risky — note this clearly.
+Ralph without tests is dangerous. Feedback validation (Step 5) will block ralph.sh generation if tests are missing. Tell the user to run `/setup-feedback` to install a test runner and configure feedback loops, then re-run `/ralph-prep`.
 
 ### Problem: AGENTS.md is over 800 words
 Help the user trim it. Common cuts:
