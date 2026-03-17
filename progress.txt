@@ -1,0 +1,5 @@
+=== ITERATION ===
+Task 1: Create shared plan format schema — DONE
+- Created references/plan-schema.md with YAML frontmatter spec and per-task field definitions
+- Files: references/plan-schema.md (new)
+- Unblocks Tasks 2, 3, 9
