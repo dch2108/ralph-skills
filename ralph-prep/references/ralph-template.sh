@@ -161,6 +161,9 @@ main() {
   # Create progress file if missing
   [ ! -f "$PROGRESS_FILE" ] && touch "$PROGRESS_FILE"
 
+  # Create failures log
+  touch ralph-failures.log
+
   local branch
   branch="$(git branch --show-current)"
 
@@ -177,9 +180,26 @@ main() {
     echo "======================== ITERATION $i / $MAX_ITERATIONS ========================"
     echo ""
 
+    # Record HEAD before iteration for failure detection
+    local head_before
+    head_before="$(git rev-parse HEAD)"
+
     local result
     result="$(run_iteration "$cli" "$docker_available")"
     echo "$result"
+
+    # Detect failed iterations (no commit produced)
+    local head_after
+    head_after="$(git rev-parse HEAD)"
+    if [ "$head_before" = "$head_after" ]; then
+      local dirty
+      dirty="$(git status --porcelain 2>/dev/null)"
+      if [ -n "$dirty" ]; then
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) iteration=$i uncommitted-changes" >> ralph-failures.log
+      else
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) iteration=$i no-change" >> ralph-failures.log
+      fi
+    fi
 
     # Sliding window: keep only the last 3 progress blocks
     # Each block starts with "=== ITERATION ==="
