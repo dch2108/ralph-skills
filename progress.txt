@@ -42,3 +42,10 @@ Task 6: Add progress.txt sliding window — DONE
 - Main loop counts delimiter blocks after each iteration, keeps only last 3 via awk truncation
 - Atomic write: awk to .tmp then mv
 - Files: ralph-prep/references/ralph-template.sh (modified)
+
+=== ITERATION ===
+Task 7: Add failed iteration logging — DONE
+- Record HEAD before iteration, compare after; check git status --porcelain
+- Log to ralph-failures.log: timestamp, iteration number, "no-change" or "uncommitted-changes"
+- touch ralph-failures.log at startup
+- Files: ralph-prep/references/ralph-template.sh (modified)

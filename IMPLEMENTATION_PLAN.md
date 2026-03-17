@@ -55,7 +55,7 @@
 
 ### Task 7: Add failed iteration logging
 - **Priority:** P1
-- **Status:** TODO
+- **Status:** DONE
 - **Area:** ralph-prep references
 - **Files:** `ralph-prep/references/ralph-template.sh`
 - **Description:** In the main loop, record `HEAD_BEFORE` before each iteration. After, compare HEAD + check `git status --porcelain`. If HEAD unchanged + clean tree: append "no-change" to ralph-failures.log. If HEAD unchanged + dirty tree: append "uncommitted changes". Ensure log file is creatable (touch at start).
