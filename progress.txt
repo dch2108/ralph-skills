@@ -29,3 +29,9 @@ Task 4: Fix multi-CLI prompt in ralph-template.sh — DONE
 - run_iteration() passes cli arg to build_prompt()
 - Files: ralph-prep/references/ralph-template.sh (modified)
 - Unblocks: Tasks 6, 7 (same file)
+
+=== ITERATION ===
+Task 5: Add revision loop to review-to-plan — DONE
+- Added revision loop instructions to Step 6: revise and re-present until approved
+- Kept it minimal: apply changes, re-check budget, re-present
+- Files: review-to-plan/SKILL.md (modified)

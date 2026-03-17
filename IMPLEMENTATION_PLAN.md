@@ -39,7 +39,7 @@
 
 ### Task 5: Add revision loop to review-to-plan
 - **Priority:** P1
-- **Status:** TODO
+- **Status:** DONE
 - **Area:** review-to-plan skill
 - **Files:** `review-to-plan/SKILL.md`
 - **Description:** After Step 6 (present for approval), add instruction: "Say 'approved' to write files, or describe changes. Revise and re-present until the user approves or says stop." Currently the skill dead-ends when the user wants changes.
