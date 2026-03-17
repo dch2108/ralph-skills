@@ -50,8 +50,28 @@ detect_docker() {
 
 # --- Build the prompt ---
 build_prompt() {
+  local cli="${1:-claude}"
+
+  # File injection: @file syntax is Claude Code-specific.
+  # Other CLIs need file contents inlined.
+  local file_header
+  if [ "$cli" = "claude" ]; then
+    file_header="@${PLAN_FILE} @${PROGRESS_FILE}"
+  else
+    file_header="$(cat <<FILES
+--- BEGIN ${PLAN_FILE} ---
+$(cat "$PLAN_FILE")
+--- END ${PLAN_FILE} ---
+
+--- BEGIN ${PROGRESS_FILE} ---
+$(cat "$PROGRESS_FILE")
+--- END ${PROGRESS_FILE} ---
+FILES
+)"
+  fi
+
   cat <<PROMPT
-@${PLAN_FILE} @${PROGRESS_FILE}
+${file_header}
 
 1. Study the IMPLEMENTATION_PLAN.md. Pick the single most important TODO task.
    Prioritize: blocked dependencies first, then highest priority (P0 > P1 > P2).
@@ -95,7 +115,7 @@ run_iteration() {
   local cli="$1"
   local docker_available="$2"
   local prompt
-  prompt="$(build_prompt)"
+  prompt="$(build_prompt "$cli")"
 
   case "$cli" in
     claude)
