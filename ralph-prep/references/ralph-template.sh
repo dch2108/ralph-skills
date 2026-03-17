@@ -95,7 +95,9 @@ ${file_header}
    referencing the task title.
 
 6. Use a subagent to update IMPLEMENTATION_PLAN.md (set task to DONE)
-   and append to progress.txt:
+   and append to progress.txt. Start each entry with a line containing
+   only: === ITERATION ===
+   Then include:
    - Task completed and reference
    - Key decisions made
    - Files changed
@@ -178,6 +180,18 @@ main() {
     local result
     result="$(run_iteration "$cli" "$docker_available")"
     echo "$result"
+
+    # Sliding window: keep only the last 3 progress blocks
+    # Each block starts with "=== ITERATION ==="
+    local block_count
+    block_count="$(grep -c '^=== ITERATION ===$' "$PROGRESS_FILE" 2>/dev/null || echo 0)"
+    if [ "$block_count" -gt 3 ]; then
+      local skip=$((block_count - 3))
+      awk -v skip="$skip" '
+        /^=== ITERATION ===$/ { count++ }
+        count > skip { print }
+      ' "$PROGRESS_FILE" > "${PROGRESS_FILE}.tmp" && mv "${PROGRESS_FILE}.tmp" "$PROGRESS_FILE"
+    fi
 
     # Push after each iteration
     git push origin "$branch" 2>/dev/null || true
