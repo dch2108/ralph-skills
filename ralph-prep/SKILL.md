@@ -9,7 +9,7 @@ description: >
   exists and is configured, and verifies AGENTS.md is lean and ready.
   Use when the user says "prepare for Ralph", "set up the loop", "ralph prep",
   "start a new Ralph run", "get ready for AFK coding", or "prep the loop".
-  Do NOT use for creating the task list (use review-to-plan for that).
+  Do NOT use for creating the task list (use plan-to-ralph for that).
 ---
 
 > **Note:** If using in Claude Code, add `disable-model-invocation: true` to the
@@ -59,14 +59,14 @@ Look for these files in the project root:
 
 Check that `IMPLEMENTATION_PLAN.md` exists in the project root.
 
-- If it does NOT exist, tell the user: "No IMPLEMENTATION_PLAN.md found. Run `/review-to-plan` first to create one from your review findings." Do NOT proceed.
+- If it does NOT exist, tell the user: "No IMPLEMENTATION_PLAN.md found. Run `/plan-to-ralph` first to create one from your review findings." Do NOT proceed.
 
 **If it exists, validate against [references/plan-schema.md](../references/plan-schema.md):**
 
 1. **Parse YAML frontmatter.** Confirm the plan has a YAML frontmatter block (between `---` delimiters) containing: `plan_version`, `task_count`, `created`, `fields_used`. Flag any missing fields.
 2. **Verify task_count.** Count the actual `### Task N:` headings. If the count does not match `task_count` in the frontmatter, block and report the mismatch.
 3. **Validate per-task fields.** For each task, check that all required fields are present: **Priority**, **Status**, **Area**, **Description**, **Acceptance**. Report any tasks missing required fields.
-4. **Check TODO count > 0.** Count tasks with `Status: TODO` or `Status: IN PROGRESS`. If zero (all tasks are DONE or the plan is empty), block: "All tasks are DONE — nothing for Ralph to work on. Create a new plan with `/review-to-plan` or add tasks manually."
+4. **Check TODO count > 0.** Count tasks with `Status: TODO` or `Status: IN PROGRESS`. If zero (all tasks are DONE or the plan is empty), block: "All tasks are DONE — nothing for Ralph to work on. Create a new plan with `/plan-to-ralph` or add tasks manually."
 
 If all checks pass, report: "Found valid plan with N tasks (M remaining). Proceed with prep?"
 
@@ -185,9 +185,9 @@ Make the script executable: `chmod +x ralph.sh`
 
 Ralph without feedback loops produces broken code silently. This is the safety gate — **if feedback loops don't work, ralph.sh will NOT be generated.**
 
-This step does NOT install tooling — it verifies that what's listed in AGENTS.md actually works. Tooling installation is a one-time project setup concern; use `/setup-feedback` for that.
+This step does NOT install tooling — it verifies that what's listed in AGENTS.md actually works. Tooling installation is a one-time project setup concern; use `/setup-ralph` for that.
 
-**If AGENTS.md has no Feedback Loops section:** STOP. Tell the user: "AGENTS.md has no feedback loop commands. Run `/setup-feedback` to configure project tooling, then re-run `/ralph-prep`." Do NOT proceed.
+**If AGENTS.md has no Feedback Loops section:** STOP. Tell the user: "AGENTS.md has no feedback loop commands. Run `/setup-ralph` to configure project tooling, then re-run `/ralph-prep`." Do NOT proceed.
 
 Read the `## Feedback Loops` section from AGENTS.md. For each command listed:
 
@@ -205,7 +205,7 @@ Report results as a table:
 | Build | npm run build | ✓ success |
 ```
 
-**If any command returns "not found":** STOP. Tell the user: "Feedback command `[command]` is listed in AGENTS.md but is not installed. Run `/setup-feedback` to install project tooling before prepping the loop." Do NOT generate ralph.sh.
+**If any command returns "not found":** STOP. Tell the user: "Feedback command `[command]` is listed in AGENTS.md but is not installed. Run `/setup-ralph` to install project tooling before prepping the loop." Do NOT generate ralph.sh.
 
 **If any command times out:** STOP. Tell the user: "`[command]` did not complete within 120 seconds — it may be running in watch mode. Update the command in AGENTS.md to run once and exit (e.g., `vitest run` instead of `vitest`)." Do NOT generate ralph.sh.
 
@@ -264,7 +264,7 @@ If any check fails, mark it with ✗ and explain what needs to be fixed before t
 ## Troubleshooting
 
 ### Problem: No test suite exists
-Ralph without tests is dangerous. Feedback validation (Step 5) will block ralph.sh generation if tests are missing. Tell the user to run `/setup-feedback` to install a test runner and configure feedback loops, then re-run `/ralph-prep`.
+Ralph without tests is dangerous. Feedback validation (Step 5) will block ralph.sh generation if tests are missing. Tell the user to run `/setup-ralph` to install a test runner and configure feedback loops, then re-run `/ralph-prep`.
 
 ### Problem: AGENTS.md is over 800 words
 Help the user trim it. Common cuts:

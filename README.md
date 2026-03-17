@@ -18,16 +18,16 @@ Based on [Geoffrey Huntley's methodology](https://www.youtube.com/watch?v=4Nna09
 
 | Skill | What it does |
 |-------|--------------|
-| `/review-to-plan` | Convert code review findings, bug reports, or issues into a structured IMPLEMENTATION_PLAN.md with priorities, acceptance criteria, and context budget estimates. |
+| `/plan-to-ralph` | Convert code review findings, bug reports, or issues into a structured IMPLEMENTATION_PLAN.md with priorities, acceptance criteria, and context budget estimates. |
 | `/ralph-prep` | Validate everything before the loop starts: plan schema, AGENTS.md, feedback loops, previous run artifacts. Generates a tuned `ralph.sh` script. |
-| `/setup-feedback` | Install and configure feedback loop tooling (typechecker, linter, test runner, build command) for a project. One-time setup. |
-| `/update-ralph-skills` | Pull latest from GitHub, re-run setup, report version changes. |
+| `/setup-ralph` | Install and configure feedback loop tooling (typechecker, linter, test runner, build command) for a project. One-time setup. |
+| `/update-ralph` | Pull latest from GitHub, re-run setup, report version changes. |
 
 ## The workflow
 
 ```
-/review-to-plan          ← turn review findings into IMPLEMENTATION_PLAN.md
-/setup-feedback          ← one-time: install project feedback tooling
+/plan-to-ralph          ← turn review findings into IMPLEMENTATION_PLAN.md
+/setup-ralph          ← one-time: install project feedback tooling
 /ralph-prep              ← validate everything, generate ralph.sh
 ./ralph.sh 1             ← HITL: watch one iteration
 ./ralph.sh 10            ← AFK: let it run
@@ -43,18 +43,18 @@ Each iteration picks one task, implements it, runs all feedback loops, commits, 
 
 Open Claude Code and paste this. Claude will do the rest.
 
-> Install ralph-skills: run `git clone https://github.com/dch2108/ralph-skills.git ~/.claude/skills/ralph-skills && cd ~/.claude/skills/ralph-skills && ./setup` then add a "ralph-skills" section to CLAUDE.md that lists the available skills: /review-to-plan, /ralph-prep, /setup-feedback, /update-ralph-skills.
+> Install ralph-skills: run `git clone https://github.com/dch2108/ralph-skills.git ~/.claude/skills/ralph-skills && cd ~/.claude/skills/ralph-skills && ./setup` then add a "ralph-skills" section to CLAUDE.md that lists the available skills: /plan-to-ralph, /ralph-prep, /setup-ralph, /update-ralph.
 
 ### Step 2: Add to your repo so teammates get it (optional)
 
-> Add ralph-skills to this project: run `cp -Rf ~/.claude/skills/ralph-skills .claude/skills/ralph-skills && rm -rf .claude/skills/ralph-skills/.git && cd .claude/skills/ralph-skills && ./setup` then add a "ralph-skills" section to this project's CLAUDE.md that lists the available skills: /review-to-plan, /ralph-prep, /setup-feedback, /update-ralph-skills.
+> Add ralph-skills to this project: run `cp -Rf ~/.claude/skills/ralph-skills .claude/skills/ralph-skills && rm -rf .claude/skills/ralph-skills/.git && cd .claude/skills/ralph-skills && ./setup` then add a "ralph-skills" section to this project's CLAUDE.md that lists the available skills: /plan-to-ralph, /ralph-prep, /setup-ralph, /update-ralph.
 
 Real files get committed to your repo (not a submodule), so `git clone` just works. Teammates just need to run `cd .claude/skills/ralph-skills && ./setup` once to create the symlinks.
 
 ### What gets installed
 
 - Skill files (Markdown prompts) in `~/.claude/skills/ralph-skills/`
-- Symlinks at `~/.claude/skills/review-to-plan`, `~/.claude/skills/ralph-prep`, etc. pointing into the ralph-skills directory
+- Symlinks at `~/.claude/skills/plan-to-ralph`, `~/.claude/skills/ralph-prep`, etc. pointing into the ralph-skills directory
 - Reference files: plan schema (`references/plan-schema.md`), loop script template (`ralph-prep/references/ralph-template.sh`)
 
 Everything lives inside `.claude/`. Nothing touches your PATH or runs in the background.
@@ -68,12 +68,12 @@ Open Claude Code and paste this:
 Or use the slash command:
 
 ```
-/update-ralph-skills
+/update-ralph
 ```
 
 ## How it works
 
-### `/review-to-plan`
+### `/plan-to-ralph`
 
 You hand it code review findings, bug reports, a list of issues — any unstructured input describing problems to fix. It triages them by priority, groups related items, estimates a context budget, and writes a structured `IMPLEMENTATION_PLAN.md` that Ralph can execute.
 
@@ -93,7 +93,7 @@ It validates everything:
 
 If feedback loops don't work, it blocks. Ralph without backpressure produces broken code silently. That is the one thing this workflow will not let you do.
 
-### `/setup-feedback`
+### `/setup-ralph`
 
 Detects your project stack and installs the right feedback tooling: TypeScript typechecker, ESLint/Biome, Vitest/Jest, build commands. Configures them in AGENTS.md so ralph-prep can validate them.
 
@@ -127,10 +127,10 @@ Core ideas from Huntley's methodology:
 Run `cd ~/.claude/skills/ralph-skills && ./setup`. This rebuilds symlinks so Claude can discover the skills.
 
 **ralph-prep blocks on feedback loops?**
-Run `/setup-feedback` to install the missing tooling, then re-run `/ralph-prep`.
+Run `/setup-ralph` to install the missing tooling, then re-run `/ralph-prep`.
 
 **ralph.sh exits immediately?**
-Check that `IMPLEMENTATION_PLAN.md` has at least one task with `Status: TODO`. If all tasks are DONE, create a new plan with `/review-to-plan`.
+Check that `IMPLEMENTATION_PLAN.md` has at least one task with `Status: TODO`. If all tasks are DONE, create a new plan with `/plan-to-ralph`.
 
 **Coming back from AFK and nothing happened?**
 Check `ralph-failures.log` — it records every iteration that didn't produce a commit, with timestamps and reasons.

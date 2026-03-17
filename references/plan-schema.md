@@ -1,7 +1,7 @@
 # Plan Schema
 
 > Canonical format for IMPLEMENTATION_PLAN.md files.
-> Both `review-to-plan` and `ralph-prep` reference this file as the single source of truth.
+> Both `plan-to-ralph` and `ralph-prep` reference this file as the single source of truth.
 
 ## YAML Frontmatter
 

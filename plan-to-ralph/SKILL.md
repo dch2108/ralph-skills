@@ -1,5 +1,5 @@
 ---
-name: review-to-plan
+name: plan-to-ralph
 metadata:
   version: '1.3'
   author: dch2108

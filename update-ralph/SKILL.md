@@ -1,5 +1,5 @@
 ---
-name: update-ralph-skills
+name: update-ralph
 metadata:
   version: '1.1'
   author: dch2108
@@ -39,10 +39,10 @@ cd .claude/skills/ralph-skills && ./setup
 ### Step 3: Read current versions
 
 Before pulling, read the `metadata.version` from each skill's `SKILL.md` frontmatter:
-- `review-to-plan/SKILL.md`
+- `plan-to-ralph/SKILL.md`
 - `ralph-prep/SKILL.md`
-- `setup-feedback/SKILL.md`
-- `update-ralph-skills/SKILL.md`
+- `setup-ralph/SKILL.md`
+- `update-ralph/SKILL.md`
 
 Record these as "before" versions.
 
@@ -76,10 +76,10 @@ Read the `metadata.version` from each skill's `SKILL.md` again. Compare with "be
 
 | Skill | Before | After |
 |-------|--------|-------|
-| review-to-plan | 1.0 | 1.1 |
+| plan-to-ralph | 1.0 | 1.1 |
 | ralph-prep | 1.0 | 1.1 |
-| setup-feedback | 1.0 | 1.1 |
-| update-ralph-skills | 1.0 | 1.1 |
+| setup-ralph | 1.0 | 1.1 |
+| update-ralph | 1.0 | 1.1 |
 
 Changes pulled. Symlinks refreshed. Run /context to verify.
 ```

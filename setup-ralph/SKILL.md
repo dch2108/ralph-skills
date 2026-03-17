@@ -1,5 +1,5 @@
 ---
-name: setup-feedback
+name: setup-ralph
 metadata:
   version: '1.1'
   author: dch2108
@@ -8,7 +8,7 @@ description: >
   build command) for a project. Run once per project to set up the backpressure
   infrastructure that Ralph and other agentic loops depend on. Use when the user
   says "setup feedback loops", "install typechecker", "install linter",
-  "configure tests", "setup-feedback", "my project has no linter", or when
+  "configure tests", "setup-ralph", "my project has no linter", or when
   ralph-prep reports missing feedback tooling. Do NOT use for running or
   prepping Ralph loops (use ralph-prep for that).
 ---
@@ -182,7 +182,7 @@ Present a summary:
 AGENTS.md updated with feedback commands.
 Config committed to git.
 
-Next: Run /review-to-plan to create a task list, then /ralph-prep to start the loop.
+Next: Run /plan-to-ralph to create a task list, then /ralph-prep to start the loop.
 ```
 
 ## Troubleshooting

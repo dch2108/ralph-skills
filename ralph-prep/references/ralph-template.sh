@@ -155,7 +155,7 @@ main() {
   docker_available="$(detect_docker)"
 
   # Preflight checks
-  [ ! -f "$PLAN_FILE" ] && echo "ERROR: $PLAN_FILE not found. Run /review-to-plan first." >&2 && exit 1
+  [ ! -f "$PLAN_FILE" ] && echo "ERROR: $PLAN_FILE not found. Run /plan-to-ralph first." >&2 && exit 1
   [ ! -f "AGENTS.md" ] && [ ! -f "CLAUDE.md" ] && echo "WARNING: No AGENTS.md or CLAUDE.md found." >&2
 
   # Create progress file if missing
