@@ -1,6 +1,6 @@
 # ralph-skills
 
-Three Claude Code skills for running [Ralph Wiggum](https://github.com/snarktank/ralph) autonomous coding loops, following [Geoffrey Huntley's](https://ghuntley.com/agent/) methodology.
+Three Claude Code skills for running [Ralph Wiggum](https://grokipedia.com/page/Ralph_Wiggum) autonomous coding loops, following [Geoffrey Huntley's](https://www.youtube.com/watch?v=4Nna09dG_c0) methodology.
 
 ## Install
 
