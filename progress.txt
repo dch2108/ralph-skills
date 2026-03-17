@@ -49,3 +49,9 @@ Task 7: Add failed iteration logging — DONE
 - Log to ralph-failures.log: timestamp, iteration number, "no-change" or "uncommitted-changes"
 - touch ralph-failures.log at startup
 - Files: ralph-prep/references/ralph-template.sh (modified)
+
+=== ITERATION ===
+Task 8: Add CHANGELOG.md and tag current release — DONE
+- Created CHANGELOG.md with v1.0–v1.3 history
+- Tagged current commit as v1.3 (skills are at v1.3, not v1.2 as originally planned)
+- Files: CHANGELOG.md (new)

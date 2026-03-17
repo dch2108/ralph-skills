@@ -63,7 +63,7 @@
 
 ### Task 8: Add CHANGELOG.md and tag current release
 - **Priority:** P1
-- **Status:** TODO
+- **Status:** DONE
 - **Area:** repo root
 - **Description:** Create CHANGELOG.md summarizing all versions: v1.0 (initial), v1.1 (version metadata, update skill, subagent rules), v1.2 (Speed Rule in review-to-plan, hard-block feedback in ralph-prep). Tag the current commit as v1.2.
 - **Acceptance:** CHANGELOG.md exists and `git tag` shows v1.2.
