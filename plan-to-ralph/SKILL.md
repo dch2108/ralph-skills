@@ -1,7 +1,7 @@
 ---
 name: plan-to-ralph
 metadata:
-  version: '1.3'
+  version: '1.4'
   author: dch2108
 description: >
   Convert code review findings, bug reports, and implementation issues into a
@@ -68,12 +68,28 @@ Do NOT proceed until the user confirms the triage.
 
 ### Step 3: Scope the first tranche
 
-Select tasks for the implementation plan. Follow these sizing rules:
+Select tasks for the implementation plan. Follow Huntley's sizing rules:
 
-- **Maximum 8-12 tasks per plan.** This is one Ralph session's worth of work. Remaining items go into a `BACKLOG.md` file for future runs.
-- **Each task must be completable in one commit.** If you cannot describe the change in 2-3 sentences, the task is too big — split it.
+**One task = one conceptual unit of work = one commit = one fresh context window.**
+
+- **Maximum 8-15 tasks per plan.** This is one Ralph session's worth of work. Remaining items go into a `BACKLOG.md` file for future runs.
+- **Each task must be a FULL implementation.** No placeholders, no stubs. "DO NOT IMPLEMENT PLACEHOLDER OR SIMPLE IMPLEMENTATIONS. WE WANT FULL IMPLEMENTATIONS." If you cannot describe the change in 2-3 sentences, the task is too big — split it.
+- **Conceptual unity, not file count.** A task can touch multiple files. The constraint is that it represents one logical change.
+- **Split on "and".** If the description contains "and" connecting two distinct behaviors, it is two tasks. Example: "Add classification logic and configurable threshold" → split.
+- **~150 line rule.** If you can envision the task producing more than ~150 lines of new code, it is probably two tasks.
+- **~5 test rule.** Tests are part of the task they validate, but if a task needs more than ~5 targeted tests, the scope is too broad.
+- **If the plan is badly scoped, regenerate it.** Don't patch bad decomposition mid-loop.
 - **Prioritize P0 and P1 first.** Only include P2/P3 items if there is room after all higher-priority work is covered.
 - **Order by dependency, then priority.** If Task B depends on Task A's output, Task A must come first.
+
+**Splitting example:**
+
+BAD: "Implement compute_timing_shifts() with four classification rules, configurable threshold, and edge cases"
+
+GOOD:
+1. "Implement compute_timing_shifts() with basic quarterly vs annual delta comparison"
+2. "Add classification logic: timing_shift vs real_change based on delta threshold"
+3. "Add configurable threshold support and partial_shift/no_change classifications"
 
 When items remain beyond the first tranche, create `BACKLOG.md` alongside the plan:
 

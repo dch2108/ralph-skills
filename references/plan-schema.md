@@ -65,3 +65,13 @@ After the frontmatter:
 5. Plan should be under 2,000 words total.
 6. Task numbering is sequential: `Task 1`, `Task 2`, etc.
 7. `task_count` in frontmatter must equal the actual number of `### Task N:` headings.
+
+## Machine-Readable Patterns
+
+These patterns are used by `ralph.sh` and `ralph-prep` for plan parsing. The leading `- ` (list-item prefix) is part of the format — patterns must account for it.
+
+- Count TODO tasks: `grep -c '\*\*Status:\*\* TODO' IMPLEMENTATION_PLAN.md`
+- Count DONE tasks: `grep -c '\*\*Status:\*\* DONE' IMPLEMENTATION_PLAN.md`
+- Count IN PROGRESS tasks: `grep -c '\*\*Status:\*\* IN PROGRESS' IMPLEMENTATION_PLAN.md`
+- Mark task done: change `**Status:** TODO` → `**Status:** DONE`
+- Extract task titles: `grep '^### Task' IMPLEMENTATION_PLAN.md`
