@@ -1,7 +1,7 @@
 ---
 name: ralph-prep
 metadata:
-  version: '1.4'
+  version: '1.5'
   author: dch2108
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.
@@ -66,7 +66,7 @@ Check that `IMPLEMENTATION_PLAN.md` exists in the project root.
 1. **Parse YAML frontmatter.** Confirm the plan has a YAML frontmatter block (between `---` delimiters) containing: `plan_version`, `task_count`, `created`, `fields_used`. Flag any missing fields.
 2. **Verify task_count.** Count the actual `### Task N:` headings. If the count does not match `task_count` in the frontmatter, block and report the mismatch.
 3. **Validate per-task fields.** For each task, check that all required fields are present: **Priority**, **Status**, **Area**, **Description**, **Acceptance**. Report any tasks missing required fields.
-4. **Check TODO count > 0.** Count tasks with `Status: TODO` or `Status: IN PROGRESS`. If zero (all tasks are DONE or the plan is empty), block: "All tasks are DONE — nothing for Ralph to work on. Create a new plan with `/plan-to-ralph` or add tasks manually."
+4. **Check TODO count > 0.** Use the grep patterns from [references/plan-schema.md](../references/plan-schema.md#machine-readable-patterns) to count tasks with `**Status:** TODO` or `**Status:** IN PROGRESS` (note: the leading `- ` list-item prefix is part of the format). If zero remaining, block: "All tasks are DONE — nothing for Ralph to work on. Create a new plan with `/plan-to-ralph` or add tasks manually."
 
 If all checks pass, report: "Found valid plan with N tasks (M remaining). Proceed with prep?"
 
@@ -125,27 +125,35 @@ Ask the user to fill in the build/test/typecheck/lint commands for their project
 
 ### Step 4: Validate or create the loop script
 
-Scan the project root and `scripts/` directory for **any** existing loop scripts. Check all variants:
-- `ralph.sh`, `ralph.py`, `ralph.js`, `ralph.ts`
+**`ralph.sh` is the ONLY valid loop script.** No other format (`.py`, `.js`, `.ts`) is supported.
+
+**Step 4a: Archive non-shell loop scripts.**
+
+Scan the project root and `scripts/` directory for any loop script variants:
+- `ralph.py`, `ralph.js`, `ralph.ts`
 - `loop.sh`, `loop.py`, `loop.js`, `loop.ts`
 
-**If one or more exist**, validate each:
+If ANY of these exist, archive them unconditionally — regardless of whether they appear compatible:
+```
+mkdir -p archive/ralph-prep-backup
+mv ralph.py ralph.js ralph.ts loop.* archive/ralph-prep-backup/ 2>/dev/null
+```
+Report: "Archived N non-standard loop scripts to `archive/ralph-prep-backup/`. `ralph.sh` is the canonical loop script."
+
+**Step 4b: Validate or generate `ralph.sh`.**
+
+If `ralph.sh` exists, validate it:
 
 1. It reads from `IMPLEMENTATION_PLAN.md` (not `prd.json`, `TODO.md`, or other plan formats)
 2. It passes `progress.txt` to the agent
-3. It includes the `<promise>COMPLETE</promise>` exit condition (or equivalent)
-4. It commits after each iteration
+3. It includes the `<promise>COMPLETE</promise>` exit condition
+4. It supports `MODEL` and `CLI_TOOL` variables (see Step 4.5)
 
-**If the existing script is incompatible** (wrong plan file, missing features, or written for a different workflow):
-1. Archive it: `mv ralph.py archive/ralph-prep-backup/ralph.py.bak` (create directory if needed)
-2. Tell the user: "Archived incompatible `ralph.py` (was reading `prd.json` instead of `IMPLEMENTATION_PLAN.md`). Generating a fresh `ralph.sh` from the template."
-3. Generate the new script (see below).
+If any check fails, archive the old `ralph.sh` alongside the others and generate a fresh one.
 
-**Do NOT leave incompatible loop scripts in place.** ralph-prep's job is to leave the environment ready, not to flag issues for the user to fix manually.
+If `ralph.sh` is compatible, keep it. Report: "Existing ralph.sh is compatible. No changes needed."
 
-**If a compatible `ralph.sh` already exists**, keep it. Report: "Existing ralph.sh is compatible. No changes needed."
-
-**If no loop script exists** (or the old one was archived), generate one. Detect the environment:
+If no `ralph.sh` exists (or the old one was archived), generate one. Detect the environment:
 
 ```bash
 # Check for Docker availability
@@ -154,20 +162,9 @@ if command -v docker &> /dev/null && docker info &> /dev/null 2>&1; then
 else
   DOCKER_AVAILABLE=false
 fi
-
-# Check for CLI tools
-if command -v claude &> /dev/null; then
-  CLI="claude"
-elif command -v amp &> /dev/null; then
-  CLI="amp"
-elif command -v ollama &> /dev/null; then
-  CLI="ollama"
-else
-  CLI="unknown"
-fi
 ```
 
-Generate `ralph.sh` using the template in [references/ralph-template.sh](references/ralph-template.sh).
+Generate `ralph.sh` with the following structure (see the actual `ralph.sh` in the repo root for the canonical implementation).
 
 For Docker-available environments (AFK mode), default to:
 ```
@@ -180,6 +177,42 @@ $CLI -p ...
 ```
 
 Make the script executable: `chmod +x ralph.sh`
+
+**Step 4c: Auth check.**
+
+Verify the selected CLI tool is authenticated before proceeding:
+
+- **Claude Code:** Run `claude --version` and verify it exits cleanly (exit code 0). If it returns an auth error or non-zero exit, STOP: "Claude CLI found but not authenticated. Run `claude login` first." Do NOT proceed.
+- **Ollama:** Run `ollama list` and verify it returns at least one model. If it fails, STOP: "Ollama is running but has no models installed. Run `ollama pull <model>` first."
+- **Other CLIs:** Run `$CLI --version` and verify exit code 0.
+
+### Step 4.5: Select model
+
+Detect available models and present a picker to the user.
+
+**Detection:**
+
+1. If `claude` CLI exists, list Claude models: `opus-4-6`, `sonnet-4-6`, `haiku-4-5`
+2. If `ollama` CLI exists, run `ollama list` and parse the model names from the output
+3. Combine into a single list with the source labeled:
+   ```
+   Available models:
+   [Claude] opus-4-6 (recommended — most capable)
+   [Claude] sonnet-4-6 (faster, lower cost)
+   [Claude] haiku-4-5 (fastest, lowest cost)
+   [Ollama] llama3:latest
+   [Ollama] codellama:latest
+   ...
+   ```
+
+**Present the picker** and ask the user to select. Default to `opus-4-6` if Claude is available.
+
+**Write the selection** into `ralph.sh` by setting these variables near the top of the script:
+- `CLI_TOOL="claude"` or `CLI_TOOL="ollama"`
+- `MODEL="opus-4-6"` (or whatever was selected)
+
+For Claude models, `run_iteration()` should invoke: `echo "$prompt" | claude -p --model "$MODEL" ...`
+For Ollama models: `ollama run "$MODEL" < <(echo "$prompt")`
 
 ### Step 5: Validate feedback loops
 
@@ -245,7 +278,9 @@ Present a summary:
 | Previous run archived | ✓ (archived to archive/ralph-2026-03-15/) |
 | Implementation plan | ✓ (8 tasks, ~1,100 words) |
 | AGENTS.md | ✓ (420 words — under budget) |
-| Loop script | ✓ (ralph.sh with Docker, Claude Code CLI) |
+| Loop script | ✓ (ralph.sh — Claude Code CLI) |
+| Model | ✓ (opus-4-6) |
+| CLI auth | ✓ (claude authenticated) |
 | Feedback: typecheck | ✓ (npm run typecheck — passing) |
 | Feedback: tests | ✓ (npm test — 42 passing) |
 | Feedback: lint | ✓ (npm run lint — clean) |
@@ -254,12 +289,28 @@ Present a summary:
 Estimated context per iteration: ~3,200 tokens
   (AGENTS.md: ~600 tokens, plan: ~1,500 tokens, progress.txt: ~200 tokens, prompt: ~900 tokens)
 
+### Cost estimate
+
+| Model | Est. cost/iteration | Max iterations at $50 budget |
+|-------|--------------------|-----------------------------|
+| opus-4-6 | ~$2-5 | 10-25 |
+| sonnet-4-6 | ~$0.50-1.50 | 33-100 |
+| haiku-4-5 | ~$0.10-0.30 | 166-500 |
+| ollama (local) | $0 | unlimited |
+
+Selected model: [MODEL] → Max safe iterations: [N] (capped at $50)
+
+Write `COST_CAP_ITERATIONS=[N]` into ralph.sh based on the selected model.
+Use the conservative (high) end of the cost estimate to calculate the cap.
+
 ### To start:
   HITL (watch): ./ralph.sh 1
-  AFK (batch):  ./ralph.sh 10
+  AFK (batch):  ./ralph.sh [N]   (capped at [N] iterations / $50)
 ```
 
 If any check fails, mark it with ✗ and explain what needs to be fixed before the loop can run.
+
+**NEVER execute ralph.sh from this skill.** Ralph-prep's job is to prepare the environment and report readiness. The user starts the loop themselves, in a separate terminal or context window. Automatically launching the loop from within the prep conversation defeats HITL control and wastes the prep context window on execution. If you find yourself about to run `./ralph.sh` — stop. You are done.
 
 ## Troubleshooting
 
