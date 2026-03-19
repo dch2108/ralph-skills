@@ -135,6 +135,31 @@ grep -q 'PLAN_FILE="PLAN.md"' ralph.sh || echo "WARNING: ralph.sh may be outdate
 
   ./ralph.sh           # one iteration, watch live (default)
   ./ralph.sh 10        # 10 iterations AFK
+  MODEL=opus ./ralph.sh 5   # use a specific model
+
+### What's in the prompt:
+
+Ralph's prompt now includes a **remaining-tasks summary** — all unchecked
+`- [ ]` lines from PLAN.md — so Ralph has situational awareness of the full
+plan, not just the current task. It also includes guardrails for subagent
+usage, no-placeholder enforcement, BACKLOG.md bug capture, and AGENTS.md
+self-improvement.
+
+### Environment variables:
+
+| Variable       | Description                                                |
+|----------------|------------------------------------------------------------|
+| `MODEL`        | Model to use (e.g. `opus`, `sonnet`). Empty = CLI default. |
+| `CLI`          | CLI binary name (default: `claude`)                        |
+| `CLAUDE_FLAGS` | Extra flags passed to the CLI                              |
+
+### Auto-tagging:
+
+When an iteration completes successfully (exactly one task checked off and a
+new commit exists), ralph.sh runs all feedback loop commands from AGENTS.md.
+If every command passes, it creates an incremental semver patch tag
+(starting at `v0.0.1`). This happens automatically — Ralph doesn't need to
+think about it.
 ```
 
 If any check fails, mark it with an X and explain what to fix.
