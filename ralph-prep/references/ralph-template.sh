@@ -241,7 +241,8 @@ main() {
 
     # Sliding window: keep only the last 3 progress blocks
     local block_count
-    block_count="$(grep -c '^=== ITERATION ===$' "$PROGRESS_FILE" 2>/dev/null || echo 0)"
+    block_count="$(grep -c '^=== ITERATION ===$' "$PROGRESS_FILE" 2>/dev/null)" || true
+    block_count="${block_count:-0}"
     if [ "$block_count" -gt 3 ]; then
       local skip=$((block_count - 3))
       awk -v skip="$skip" '
