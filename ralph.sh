@@ -70,6 +70,14 @@ count_remaining() {
   echo "${n:-0}"
 }
 
+remaining_tasks_summary() {
+  local i=1
+  grep '^\- \[ \]' "$PLAN_FILE" 2>/dev/null | while IFS= read -r line; do
+    echo "${i}. ${line}"
+    i=$((i + 1))
+  done
+}
+
 # --- Build the prompt (scoped to a SINGLE task) ---
 #
 # Short prompt — AGENTS.md carries project-specific instructions
@@ -77,23 +85,34 @@ count_remaining() {
 # adds the loop-specific context: which task, progress, and how
 # to mark done.
 build_prompt() {
-  local task_line done_count remaining_count progress_content
+  local task_line done_count remaining_count progress_content remaining_summary
   task_line="$(extract_next_task)" || return 1
   done_count="$(count_done)"
   remaining_count="$(count_remaining)"
+  remaining_summary="$(remaining_tasks_summary)"
   progress_content=""
   [ -f "$PROGRESS_FILE" ] && [ -s "$PROGRESS_FILE" ] && progress_content="$(cat "$PROGRESS_FILE")"
 
   cat <<PROMPT
-You are Ralph. Complete this one task:
+You are Ralph. Here are the remaining tasks:
+${remaining_summary}
 
+Start with this task:
 ${task_line}
+
+Complete exactly one task this iteration.
 
 Progress: ${done_count} done, ${remaining_count} remaining.
 ${progress_content:+
 Previous iterations:
 ${progress_content}
 }
+Before making changes, search the codebase using subagents — do NOT assume functionality is not implemented.
+Use only 1 subagent for build/test runs. Use parallel subagents freely for file searches and reads.
+Implement completely. No placeholders, stubs, or minimal implementations.
+If you discover bugs unrelated to your current task, document them in BACKLOG.md using a subagent. Do not fix them now.
+If you learn something new about how to build, test, or run this project, update AGENTS.md using a subagent. Keep it brief — commands only, no status updates.
+
 When done:
 1. Change - [ ] to - [x] for your task line (match the number) in PLAN.md.
 2. Commit your changes with a descriptive message.
