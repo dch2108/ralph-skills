@@ -1,8 +1,5 @@
 === ITERATION ===
-Task 4: Created haiku-thursday.md with a Thursday haiku. Marked task 4 complete in PLAN.md. Files changed: haiku-thursday.md, PLAN.md. No blockers.
-=== ITERATION ===
-Task 5: Created haiku-friday.md with a Friday haiku. Marked task 5 complete in PLAN.md. Files changed: haiku-friday.md, PLAN.md. No blockers.
-=== ITERATION ===
-Task 6: Created haiku-saturday.md with a Saturday haiku. Marked task 6 complete in PLAN.md. Files changed: haiku-saturday.md, PLAN.md. No blockers.
-=== ITERATION ===
-Task 7: Created haiku-sunday.md with a Sunday haiku. Marked task 7 complete in PLAN.md. Files changed: haiku-sunday.md, PLAN.md. No blockers. All 7 tasks complete.
+Task 1: Added remaining_tasks_summary() function to ralph-template.sh
+Files changed: ralph-prep/references/ralph-template.sh, PLAN.md, progress.txt
+Function extracts all unchecked `- [ ]` lines from PLAN.md and returns them as a numbered list.
+No blockers.

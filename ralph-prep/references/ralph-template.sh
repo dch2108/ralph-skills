@@ -70,6 +70,14 @@ count_remaining() {
   echo "${n:-0}"
 }
 
+remaining_tasks_summary() {
+  local i=1
+  grep '^\- \[ \]' "$PLAN_FILE" 2>/dev/null | while IFS= read -r line; do
+    echo "${i}. ${line}"
+    i=$((i + 1))
+  done
+}
+
 # --- Build the prompt (scoped to a SINGLE task) ---
 #
 # Short prompt — AGENTS.md carries project-specific instructions

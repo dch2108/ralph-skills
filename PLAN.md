@@ -1,9 +1,17 @@
 # Plan
 
-- [x] 1. Create haiku-monday.md with a haiku about Monday
-- [x] 2. Create haiku-tuesday.md with a haiku about Tuesday
-- [x] 3. Create haiku-wednesday.md with a haiku about Wednesday
-- [x] 4. Create haiku-thursday.md with a haiku about Thursday
-- [x] 5. Create haiku-friday.md with a haiku about Friday
-- [x] 6. Create haiku-saturday.md with a haiku about Saturday
-- [x] 7. Create haiku-sunday.md with a haiku about Sunday
+- [x] 1. Add a `remaining_tasks_summary()` function to ralph-template.sh that extracts all unchecked `- [ ]` lines from PLAN.md and returns them as a numbered list (just the raw lines). This gives Ralph situational awareness of the full landscape without needing a separate data structure.
+
+- [ ] 2. Expand `build_prompt()` in ralph-template.sh to include the remaining-tasks summary and new guardrails. The prompt should now read: "You are Ralph. Here are the remaining tasks:" followed by the summary, then "Start with this task:" followed by the next unchecked line, then "Complete exactly one task this iteration." Add these single-line guardrails after the task block: (a) "Before making changes, search the codebase using subagents — do NOT assume functionality is not implemented." (b) "Use only 1 subagent for build/test runs. Use parallel subagents freely for file searches and reads." (c) "Implement completely. No placeholders, stubs, or minimal implementations." (d) "If you discover bugs unrelated to your current task, document them in BACKLOG.md using a subagent. Do not fix them now." (e) "If you learn something new about how to build, test, or run this project, update AGENTS.md using a subagent. Keep it brief — commands only, no status updates."
+
+- [ ] 3. Mirror the expanded prompt in the root ralph.sh (which is the copy that ships with the repo for testing). After modifying ralph-template.sh, copy the updated `remaining_tasks_summary()` and `build_prompt()` functions into ralph.sh so both files stay in sync.
+
+- [ ] 4. Add a `MODEL` environment variable to ralph-template.sh (and ralph.sh). Default to empty (uses CLI default). When set, pass it as `--model $MODEL` for claude CLI, or as the model name for ollama. Update the header comment to document it alongside `CLI` and `CLAUDE_FLAGS`. This lets the user do `MODEL=opus ./ralph.sh plan 5` or `MODEL=sonnet ./ralph.sh 10`.
+
+- [ ] 5. Add git-tag-on-clean logic to the post-iteration checks in ralph-template.sh (and ralph.sh). After the done-delta check and no-commit check, if the iteration completed successfully (delta == 1 and new commit exists), run the project's feedback loop commands from AGENTS.md. If all pass, create an incremental semver patch tag (read latest tag with `git describe --tags --abbrev=0`, increment patch, `git tag`). If no tags exist, start at `v0.0.1`. This is a script-level check, not a prompt instruction — Ralph doesn't need to think about tagging.
+
+- [ ] 6. Update ralph-prep/SKILL.md to document the new features in the readiness report: remaining-task summary in prompt, MODEL env var, git tagging behavior. Update the "How to run" section to show `MODEL=opus ./ralph.sh` as an example.
+
+- [ ] 7. Update the root README.md to document: (a) the `MODEL` env var in the environment variables section, (b) the remaining-tasks summary feature under "The loop script" section, (c) the auto-tagging behavior, (d) the new prompt guardrails (subagent usage, no-placeholders, AGENTS.md self-improvement, BACKLOG.md bug capture) under a "Prompt guardrails" subsection of Principles.
+
+- [ ] 8. Bump `metadata.version` in all four SKILL.md frontmatters to '2.3' and add a v2.3 entry to CHANGELOG.md summarizing: expanded prompt with situational awareness and guardrails, MODEL env var, auto git tagging on clean feedback, AGENTS.md self-improvement instruction, BACKLOG.md bug capture instruction.
