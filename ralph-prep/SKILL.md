@@ -1,7 +1,7 @@
 ---
 name: ralph-prep
 metadata:
-  version: '2.1'
+  version: '2.2'
   author: dch2108
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.
@@ -79,18 +79,42 @@ For each command listed, run it with `timeout 120`:
 
 Always copy the canonical template to the project root. This ensures v1→v2 migration and picks up any template improvements.
 
+**CRITICAL:** The template lives in the ralph-prep skill directory, NOT in the target project. You must resolve the path through the skill installation.
+
 ```bash
-# Archive old ralph.sh if it exists and differs
+# Find the template — try multiple known locations
+TEMPLATE=""
+for candidate in \
+  ~/.claude/skills/ralph-prep/references/ralph-template.sh \
+  ~/.claude/skills/ralph-skills/ralph-prep/references/ralph-template.sh \
+  .claude/skills/ralph-prep/references/ralph-template.sh \
+  .claude/skills/ralph-skills/ralph-prep/references/ralph-template.sh; do
+  if [ -f "$candidate" ]; then
+    TEMPLATE="$candidate"
+    break
+  fi
+done
+
+if [ -z "$TEMPLATE" ]; then
+  echo "ERROR: Cannot find ralph-template.sh. Re-run: cd ~/.claude/skills/ralph-skills && ./setup"
+  # STOP — do not continue without the template
+fi
+
+# Archive old ralph.sh if it exists
 if [ -f ralph.sh ]; then
   mkdir -p archive/ralph-prep-backup
   cp ralph.sh archive/ralph-prep-backup/ralph.sh.$(date +%Y%m%d%H%M%S)
 fi
 
-# Copy canonical template
-cp ralph-prep/references/ralph-template.sh ralph.sh 2>/dev/null \
-  || cp "$(find ~/.claude/skills -path '*/ralph-prep/references/ralph-template.sh' -print -quit 2>/dev/null)" ralph.sh
+# Copy and verify
+cp "$TEMPLATE" ralph.sh
 chmod +x ralph.sh
+
+# Verify the copy is v2 (uses PLAN.md, not IMPLEMENTATION_PLAN.md)
+grep -q 'PLAN_FILE="PLAN.md"' ralph.sh || echo "WARNING: ralph.sh may be outdated — check template"
 ```
+
+**After copying, verify** by running `head -25 ralph.sh` and confirming `PLAN_FILE="PLAN.md"` appears on line 22.
 
 ### Report
 
