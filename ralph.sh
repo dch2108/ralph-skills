@@ -122,7 +122,7 @@ run_iteration() {
   local cmd
   case "$cli" in
     claude)
-      cmd="claude -p ${CLAUDE_FLAGS:---verbose} < '$PROMPT_FILE'"
+      cmd="claude --dangerously-skip-permissions -p ${CLAUDE_FLAGS:-} < '$PROMPT_FILE'"
       ;;
     amp)
       cmd="amp < '$PROMPT_FILE'"
