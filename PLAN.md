@@ -5,5 +5,5 @@
 - [x] 3. Create haiku-wednesday.md with a haiku about Wednesday
 - [x] 4. Create haiku-thursday.md with a haiku about Thursday
 - [x] 5. Create haiku-friday.md with a haiku about Friday
-- [ ] 6. Create haiku-saturday.md with a haiku about Saturday
+- [x] 6. Create haiku-saturday.md with a haiku about Saturday
 - [ ] 7. Create haiku-sunday.md with a haiku about Sunday
