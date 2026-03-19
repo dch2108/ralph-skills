@@ -95,10 +95,21 @@ Key features:
 - **One task per iteration.** `extract_next_task()` feeds the agent ONLY the first unchecked item from PLAN.md. The agent literally cannot see other tasks.
 - **Short prompt.** ~6 lines. AGENTS.md carries project-specific instructions (feedback loops, subagent rules, conventions).
 - **Live streaming.** Uses `script` (pseudo-tty) so you see output in real time during HITL mode.
+- **Remaining-tasks summary.** The prompt shows all unchecked tasks so the agent has situational awareness of the full plan, then designates exactly one to work on.
 - **Multi-CLI.** Works with Claude Code, Amp, and Ollama. Auto-detects or set `CLI=` env var.
 - **Delta enforcement.** After each iteration, verifies exactly one task was completed. Logs violations.
+- **Auto-tagging.** When an iteration completes cleanly (delta == 1, new commit), the script runs all feedback loop commands from AGENTS.md. If they all pass, it creates an incremental semver patch tag (e.g. `v0.0.1`, `v0.0.2`, …). No tags yet? Starts at `v0.0.1`.
 - **Sliding window.** `progress.txt` keeps only the last 3 iteration blocks.
 - **Failure logging.** No-commit iterations get logged to `ralph-failures.log` with timestamps.
+
+#### Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CLI` | auto-detect | Which CLI to use: `claude`, `amp`, or `ollama` |
+| `MODEL` | *(empty — uses CLI default)* | Model override. Passed as `--model` for Claude Code, or as the model name for Ollama. Example: `MODEL=opus ./ralph.sh 5` |
+| `OLLAMA_MODEL` | `llama3.3` | Default model for Ollama (overridden by `MODEL`) |
+| `CLAUDE_FLAGS` | *(empty)* | Extra flags passed to the `claude` CLI |
 
 ## Principles
 
@@ -110,6 +121,16 @@ From [Huntley's methodology](https://ghuntley.com/ralph/):
 - **Trust the loop.** Ralph is deterministically bad in an undeterministic world. Tune by watching, adjusting prompts, and running more loops.
 - **Subagents for recon, main loop for decisions.** File searching and test runs get delegated; implementation stays in the primary context.
 - **Plans describe intent, not location.** "The counter module double-counts when frames overlap" is better than a stale line number.
+
+### Prompt guardrails
+
+The loop prompt includes these rules so Ralph stays disciplined across iterations:
+
+- **Search before assuming.** Use subagents to search the codebase before making changes — don't assume functionality is missing.
+- **Subagent budget.** One subagent for build/test runs. Parallel subagents are fine for file searches and reads.
+- **No placeholders.** Implement completely. No stubs, placeholders, or minimal implementations.
+- **BACKLOG.md bug capture.** If Ralph discovers bugs unrelated to the current task, it documents them in `BACKLOG.md` via a subagent instead of fixing them now.
+- **AGENTS.md self-improvement.** If Ralph learns something new about how to build, test, or run the project, it updates `AGENTS.md` via a subagent — commands only, no status updates.
 
 ## Troubleshooting
 

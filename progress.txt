@@ -1,9 +1,4 @@
 === ITERATION ===
-Task 3: Synced remaining_tasks_summary() and build_prompt() from ralph-template.sh to root ralph.sh
-Files changed: ralph.sh, PLAN.md
-Added remaining_tasks_summary() function and updated build_prompt() with remaining-tasks summary, guardrails (codebase search, subagent rules, no placeholders, BACKLOG.md, AGENTS.md).
-No blockers.
-=== ITERATION ===
 Task 4: Added MODEL environment variable to ralph-template.sh and ralph.sh
 Files changed: ralph-prep/references/ralph-template.sh, ralph.sh, PLAN.md, progress.txt
 MODEL env var passes --model $MODEL to claude CLI, or overrides ollama model name. Defaults to empty (CLI default). Header comment updated to document MODEL alongside CLI, OLLAMA_MODEL, and CLAUDE_FLAGS. Startup banner shows active model.
@@ -17,4 +12,9 @@ No blockers.
 Task 6: Updated ralph-prep/SKILL.md to document v2.3 features
 Files changed: ralph-prep/SKILL.md, PLAN.md
 Added remaining-task summary docs, MODEL env var with example, environment variables table, and auto-tagging behavior to the readiness report section. Updated "How to run" with MODEL=opus example.
+No blockers.
+=== ITERATION ===
+Task 7: Updated root README.md to document v2.3 features
+Files changed: README.md, PLAN.md, progress.txt
+Added remaining-tasks summary feature to loop script section, MODEL env var with environment variables table, auto-tagging behavior, and prompt guardrails subsection (search-before-assuming, subagent budget, no-placeholders, BACKLOG.md bug capture, AGENTS.md self-improvement) under Principles.
 No blockers.
