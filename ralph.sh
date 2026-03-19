@@ -59,11 +59,15 @@ extract_next_task() {
 }
 
 count_done() {
-  grep -c '^\- \[x\]' "$PLAN_FILE" 2>/dev/null || echo 0
+  local n
+  n=$(grep -c '^\- \[x\]' "$PLAN_FILE" 2>/dev/null) || true
+  echo "${n:-0}"
 }
 
 count_remaining() {
-  grep -c '^\- \[ \]' "$PLAN_FILE" 2>/dev/null || echo 0
+  local n
+  n=$(grep -c '^\- \[ \]' "$PLAN_FILE" 2>/dev/null) || true
+  echo "${n:-0}"
 }
 
 # --- Build the prompt (scoped to a SINGLE task) ---
