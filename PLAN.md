@@ -8,7 +8,7 @@
 
 - [x] 4. Add a `MODEL` environment variable to ralph-template.sh (and ralph.sh). Default to empty (uses CLI default). When set, pass it as `--model $MODEL` for claude CLI, or as the model name for ollama. Update the header comment to document it alongside `CLI` and `CLAUDE_FLAGS`. This lets the user do `MODEL=opus ./ralph.sh plan 5` or `MODEL=sonnet ./ralph.sh 10`.
 
-- [ ] 5. Add git-tag-on-clean logic to the post-iteration checks in ralph-template.sh (and ralph.sh). After the done-delta check and no-commit check, if the iteration completed successfully (delta == 1 and new commit exists), run the project's feedback loop commands from AGENTS.md. If all pass, create an incremental semver patch tag (read latest tag with `git describe --tags --abbrev=0`, increment patch, `git tag`). If no tags exist, start at `v0.0.1`. This is a script-level check, not a prompt instruction — Ralph doesn't need to think about tagging.
+- [x] 5. Add git-tag-on-clean logic to the post-iteration checks in ralph-template.sh (and ralph.sh). After the done-delta check and no-commit check, if the iteration completed successfully (delta == 1 and new commit exists), run the project's feedback loop commands from AGENTS.md. If all pass, create an incremental semver patch tag (read latest tag with `git describe --tags --abbrev=0`, increment patch, `git tag`). If no tags exist, start at `v0.0.1`. This is a script-level check, not a prompt instruction — Ralph doesn't need to think about tagging.
 
 - [ ] 6. Update ralph-prep/SKILL.md to document the new features in the readiness report: remaining-task summary in prompt, MODEL env var, git tagging behavior. Update the "How to run" section to show `MODEL=opus ./ralph.sh` as an example.
 

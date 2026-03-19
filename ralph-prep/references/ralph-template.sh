@@ -80,6 +80,80 @@ remaining_tasks_summary() {
   done
 }
 
+# --- Feedback loop commands from AGENTS.md ---
+#
+# Extracts backtick-wrapped commands from the ## Feedback Loops section.
+# Returns one command per line. Returns nothing if no commands found.
+extract_feedback_commands() {
+  [ -f "AGENTS.md" ] || return 0
+  awk '
+    /^## Feedback Loops/ { in_section=1; next }
+    /^## / && in_section { exit }
+    in_section && /`[^`]+`/ {
+      line = $0
+      while (match(line, /`([^`]+)`/)) {
+        cmd = substr(line, RSTART+1, RLENGTH-2)
+        # Skip non-command backtick content (single words without spaces that look like config keys)
+        if (cmd ~ / / || cmd ~ /^(npm|npx|yarn|pnpm|make|cargo|go |python|pytest|mypy|ruff|eslint|tsc|sh |bash |\.\/|bundle|rake|mix|gradle|mvn)/) {
+          print cmd
+        }
+        line = substr(line, RSTART+RLENGTH)
+      }
+    }
+  ' AGENTS.md
+}
+
+# --- Auto-tagging on clean iteration ---
+#
+# Reads the latest semver tag, increments the patch version.
+# If no tags exist, starts at v0.0.1.
+next_patch_tag() {
+  local latest
+  latest="$(git describe --tags --abbrev=0 2>/dev/null)" || true
+  if [ -z "$latest" ]; then
+    echo "v0.0.1"
+    return
+  fi
+  # Strip leading 'v' if present, split on dots, increment patch
+  local version="${latest#v}"
+  local major minor patch
+  IFS='.' read -r major minor patch <<< "$version"
+  patch=$((patch + 1))
+  echo "v${major}.${minor}.${patch}"
+}
+
+# Run feedback loop commands and auto-tag if all pass
+try_auto_tag() {
+  local commands
+  commands="$(extract_feedback_commands)"
+  if [ -z "$commands" ]; then
+    echo "ℹ  No feedback loop commands in AGENTS.md — skipping auto-tag."
+    return 0
+  fi
+
+  echo "🔄 Running feedback loop commands..."
+  local all_passed=true
+  while IFS= read -r cmd; do
+    echo "  → $cmd"
+    if ! eval "$cmd" > /dev/null 2>&1; then
+      echo "  ✗  Failed: $cmd"
+      all_passed=false
+      break
+    else
+      echo "  ✓  Passed"
+    fi
+  done <<< "$commands"
+
+  if [ "$all_passed" = true ]; then
+    local tag
+    tag="$(next_patch_tag)"
+    git tag "$tag"
+    echo "🏷  Tagged: $tag"
+  else
+    echo "⚠  Feedback loop failed — skipping auto-tag."
+  fi
+}
+
 # --- Build the prompt (scoped to a SINGLE task) ---
 #
 # Short prompt — AGENTS.md carries project-specific instructions
@@ -259,6 +333,11 @@ main() {
         echo "⚠  Changes exist but no commit was made."
         echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) iteration=$i uncommitted-changes" >> ralph-failures.log
       fi
+    fi
+
+    # Auto-tag on clean iteration (delta == 1, new commit exists)
+    if [ "$done_delta" -eq 1 ] && [ "$head_before" != "$head_after" ]; then
+      try_auto_tag
     fi
 
     # Sliding window: keep only the last 3 progress blocks
