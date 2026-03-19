@@ -3,3 +3,9 @@ Task 1: Added remaining_tasks_summary() function to ralph-template.sh
 Files changed: ralph-prep/references/ralph-template.sh, PLAN.md, progress.txt
 Function extracts all unchecked `- [ ]` lines from PLAN.md and returns them as a numbered list.
 No blockers.
+
+=== ITERATION ===
+Task 2: Expanded build_prompt() with remaining-tasks summary and guardrails
+Files changed: ralph-prep/references/ralph-template.sh, PLAN.md, progress.txt
+Prompt now shows all remaining tasks, highlights the current task, and includes 5 guardrails (codebase search, subagent rules, no placeholders, BACKLOG.md, AGENTS.md).
+No blockers.
