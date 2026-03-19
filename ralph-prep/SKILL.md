@@ -1,331 +1,129 @@
 ---
 name: ralph-prep
 metadata:
-  version: '1.5'
+  version: '2.1'
   author: dch2108
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.
-  Validates prerequisites, archives previous runs, ensures the loop script
-  exists and is configured, and verifies AGENTS.md is lean and ready.
+  Validates prerequisites, copies the loop script, and reports readiness.
   Use when the user says "prepare for Ralph", "set up the loop", "ralph prep",
   "start a new Ralph run", "get ready for AFK coding", or "prep the loop".
   Do NOT use for creating the task list (use plan-to-ralph for that).
 ---
 
-> **Note:** If using in Claude Code, add `disable-model-invocation: true` to the
-> frontmatter above to prevent auto-triggering. This skill has side effects
-> (archiving files, creating scripts) and should only run on explicit invocation.
-
 # Ralph Prep
 
-Prepare the environment for a fresh Ralph Wiggum loop run.
-
-## Philosophy
-
-Every Ralph iteration starts with a fresh context window. The only things that persist are files on disk and git history. This skill ensures those files are clean, correct, and minimal before the loop begins.
-
-Key principles (per Geoffrey Huntley):
-
-- **Deterministic context allocation.** Every iteration loads the same files. Keep them small.
-- **Fresh context per iteration.** No conversation history carries over. The plan and AGENTS.md are the agent's entire world.
-- **Backpressure is mandatory.** Without feedback loops (tests, types, linting), the agent will silently produce broken code.
-- **Isolation for AFK runs.** Docker sandboxes prevent runaway agents from damaging the host.
-- **Subagents are child processes, not peers.** Spawn subagents for I/O-heavy reconnaissance and parallel writes. Keep strategy and implementation in the main loop. Every tool call result gets malloc'd into the primary context — subagents burn through their own memory and return only a small summary.
+Validate the environment for a Ralph loop run. Fast — should complete in 30 seconds.
 
 ## Instructions
 
-### Step 1: Check for previous run artifacts
+### Check 1: Git repo
 
-Look for these files in the project root:
-
-- `IMPLEMENTATION_PLAN.md`
-- `progress.txt`
-- `BACKLOG.md`
-
-**If any exist from a previous run:**
-
-1. Check if the previous run is complete (all tasks marked `DONE` in the plan).
-2. If complete or the user confirms the old run is finished, archive them:
-   ```
-   mkdir -p archive/ralph-[DATE]
-   mv IMPLEMENTATION_PLAN.md progress.txt BACKLOG.md archive/ralph-[DATE]/ 2>/dev/null
-   git add archive/ && git commit -m "chore: archive Ralph run [DATE]"
-   ```
-3. If the previous run is NOT complete, warn the user: "A previous Ralph run has incomplete tasks. Archive it anyway, or resume it?" Do NOT proceed without confirmation.
-
-**If no previous artifacts exist**, skip to Step 2.
-
-### Step 2: Verify and validate the implementation plan
-
-Check that `IMPLEMENTATION_PLAN.md` exists in the project root.
-
-- If it does NOT exist, tell the user: "No IMPLEMENTATION_PLAN.md found. Run `/plan-to-ralph` first to create one from your review findings." Do NOT proceed.
-
-**If it exists, validate against [references/plan-schema.md](../references/plan-schema.md):**
-
-1. **Parse YAML frontmatter.** Confirm the plan has a YAML frontmatter block (between `---` delimiters) containing: `plan_version`, `task_count`, `created`, `fields_used`. Flag any missing fields.
-2. **Verify task_count.** Count the actual `### Task N:` headings. If the count does not match `task_count` in the frontmatter, block and report the mismatch.
-3. **Validate per-task fields.** For each task, check that all required fields are present: **Priority**, **Status**, **Area**, **Description**, **Acceptance**. Report any tasks missing required fields.
-4. **Check TODO count > 0.** Use the grep patterns from [references/plan-schema.md](../references/plan-schema.md#machine-readable-patterns) to count tasks with `**Status:** TODO` or `**Status:** IN PROGRESS` (note: the leading `- ` list-item prefix is part of the format). If zero remaining, block: "All tasks are DONE — nothing for Ralph to work on. Create a new plan with `/plan-to-ralph` or add tasks manually."
-
-If all checks pass, report: "Found valid plan with N tasks (M remaining). Proceed with prep?"
-
-Do NOT proceed if any validation check fails.
-
-### Step 3: Validate AGENTS.md
-
-Check for `AGENTS.md` (or `CLAUDE.md`) in the project root.
-
-**If it exists**, audit it for Ralph-readiness:
-
-1. **Size check.** Count words. Flag if over 800 words — this will consume too much context per iteration. Recommend trimming to essentials only.
-2. **Required sections.** Verify these sections exist (or suggest adding them):
-   - Build/test commands (exact commands, not descriptions)
-   - Feedback loop commands (typecheck, lint, test suite)
-   - Commit conventions (if any)
-   - Subagent rules (delegation boundaries)
-3. **Bloat check.** Flag and recommend removing:
-   - Code style rules that the codebase already demonstrates (LLMs are in-context learners — they pick up patterns from existing code)
-   - Verbose explanations or rationale (the agent does not need to know *why*, only *what*)
-   - Architecture documentation (move to `references/` or a separate doc)
-   - Anything the agent can discover by reading the code
-
-**If it does NOT exist**, create a minimal one:
-
-```markdown
-# AGENTS.md
-
-## Build
-[To be filled — e.g., `npm run build`, `cargo build`]
-
-## Test
-[To be filled — e.g., `npm test`, `pytest`]
-
-## Typecheck
-[To be filled — e.g., `npm run typecheck`, `mypy .`]
-
-## Lint
-[To be filled — e.g., `npm run lint`, `ruff check .`]
-
-## Conventions
-- One logical change per commit
-- Run all feedback loops before committing
-- Do NOT commit if any check fails
-
-## Subagent Rules
-- Before making changes, search the codebase using parallel subagents (do not assume something is not implemented)
-- Delegate test/build runs to 1 subagent — never fan out builds
-- Use subagents to study existing source code before modifying it
-- Parallel subagents OK for independent file writes (e.g., updating 5 unrelated files)
-- Use a subagent to update IMPLEMENTATION_PLAN.md and progress.txt after each task
-- Do NOT delegate: task selection, implementation decisions, or the core fix itself
-```
-
-Ask the user to fill in the build/test/typecheck/lint commands for their project.
-
-### Step 4: Validate or create the loop script
-
-**`ralph.sh` is the ONLY valid loop script.** No other format (`.py`, `.js`, `.ts`) is supported.
-
-**Step 4a: Archive non-shell loop scripts.**
-
-Scan the project root and `scripts/` directory for any loop script variants:
-- `ralph.py`, `ralph.js`, `ralph.ts`
-- `loop.sh`, `loop.py`, `loop.js`, `loop.ts`
-
-If ANY of these exist, archive them unconditionally — regardless of whether they appear compatible:
-```
-mkdir -p archive/ralph-prep-backup
-mv ralph.py ralph.js ralph.ts loop.* archive/ralph-prep-backup/ 2>/dev/null
-```
-Report: "Archived N non-standard loop scripts to `archive/ralph-prep-backup/`. `ralph.sh` is the canonical loop script."
-
-**Step 4b: Validate or generate `ralph.sh`.**
-
-If `ralph.sh` exists, validate it:
-
-1. It reads from `IMPLEMENTATION_PLAN.md` (not `prd.json`, `TODO.md`, or other plan formats)
-2. It passes `progress.txt` to the agent
-3. It includes the `<promise>COMPLETE</promise>` exit condition
-4. It supports `MODEL` and `CLI_TOOL` variables (see Step 4.5)
-
-If any check fails, archive the old `ralph.sh` alongside the others and generate a fresh one.
-
-If `ralph.sh` is compatible, keep it. Report: "Existing ralph.sh is compatible. No changes needed."
-
-If no `ralph.sh` exists (or the old one was archived), generate one. Detect the environment:
+**Hard gate.** Nothing else runs until this passes.
 
 ```bash
-# Check for Docker availability
-if command -v docker &> /dev/null && docker info &> /dev/null 2>&1; then
-  DOCKER_AVAILABLE=true
-else
-  DOCKER_AVAILABLE=false
+git rev-parse --is-inside-work-tree
+```
+
+- **Not a git repo:** STOP. "This project is not a git repository. Ralph requires git. Run `git init && git add -A && git commit -m 'initial commit'` first."
+- **Dirty working tree:** Warn: "Working tree has uncommitted changes. Recommend committing or stashing." Let the user decide.
+- **Previous run complete:** If PLAN.md exists and has zero `- [ ]` lines (all tasks checked), offer to archive:
+  ```
+  mkdir -p archive/ralph-$(date +%Y-%m-%d)
+  mv PLAN.md progress.txt BACKLOG.md archive/ralph-$(date +%Y-%m-%d)/ 2>/dev/null
+  git add archive/ && git commit -m "chore: archive Ralph run"
+  ```
+- **Clean tree:** Pass. Continue.
+
+### Check 2: Plan exists
+
+- `PLAN.md` must exist in the project root.
+- Must have at least one unchecked item (`- [ ]`).
+- **Missing:** "No PLAN.md found. Run `/plan-to-ralph` first."
+- **All checked:** "All tasks are done. Create a new plan with `/plan-to-ralph`."
+- **Has unchecked items:** Report: "Found N unchecked tasks in PLAN.md."
+
+### Check 2b: AGENTS.md sanity check
+
+Scan `AGENTS.md` (or `CLAUDE.md`) for stale references that will break the loop:
+
+- **`IMPLEMENTATION_PLAN.md`** — v1 artifact. Ralph v2 uses `PLAN.md`. If found, offer to fix: replace all occurrences with `PLAN.md` and show the diff to the user.
+- **`implementation.plan`** or **`implementation_plan`** — same issue, catch variant spellings.
+
+If stale references are found and the user approves the fix, apply it before continuing. If the user declines, warn that the loop will likely fail and continue.
+
+### Check 3: Feedback loops work
+
+Ralph without feedback loops produces broken code silently. This is the safety gate.
+
+Read `AGENTS.md` (or `CLAUDE.md`). Look for feedback loop commands (typecheck, lint, test, build).
+
+**If no feedback section exists:** STOP. "AGENTS.md has no feedback loop commands. Run `/setup-ralph` to configure project tooling, then re-run `/ralph-prep`."
+
+For each command listed, run it with `timeout 120`:
+
+```
+| Feedback loop | Command           | Result          |
+|---------------|-------------------|-----------------|
+| Typecheck     | npm run typecheck | passing         |
+| Tests         | npm test          | 42 passing      |
+| Lint          | npm run lint      | command not found|
+| Build         | npm run build     | success         |
+```
+
+- **Command not found:** STOP. "Feedback command `[cmd]` is listed in AGENTS.md but not installed. Run `/setup-ralph` to install tooling."
+- **Command times out:** STOP. "`[cmd]` did not complete in 120s — may be in watch mode. Update AGENTS.md to use a run-once command."
+- **Command fails (but exists):** Warn: "[Tool] has existing failures. Ralph will try to fix these AND your plan tasks." Let user decide.
+
+### Copy ralph.sh
+
+Always copy the canonical template to the project root. This ensures v1→v2 migration and picks up any template improvements.
+
+```bash
+# Archive old ralph.sh if it exists and differs
+if [ -f ralph.sh ]; then
+  mkdir -p archive/ralph-prep-backup
+  cp ralph.sh archive/ralph-prep-backup/ralph.sh.$(date +%Y%m%d%H%M%S)
 fi
+
+# Copy canonical template
+cp ralph-prep/references/ralph-template.sh ralph.sh 2>/dev/null \
+  || cp "$(find ~/.claude/skills -path '*/ralph-prep/references/ralph-template.sh' -print -quit 2>/dev/null)" ralph.sh
+chmod +x ralph.sh
 ```
 
-Generate `ralph.sh` with the following structure (see the actual `ralph.sh` in the repo root for the canonical implementation).
-
-For Docker-available environments (AFK mode), default to:
-```
-docker sandbox run $CLI -p ...
-```
-
-For non-Docker environments (HITL mode), use:
-```
-$CLI -p ...
-```
-
-Make the script executable: `chmod +x ralph.sh`
-
-**Step 4c: Auth check.**
-
-Verify the selected CLI tool is authenticated before proceeding:
-
-- **Claude Code:** Run `claude --version` and verify it exits cleanly (exit code 0). If it returns an auth error or non-zero exit, STOP: "Claude CLI found but not authenticated. Run `claude login` first." Do NOT proceed.
-- **Ollama:** Run `ollama list` and verify it returns at least one model. If it fails, STOP: "Ollama is running but has no models installed. Run `ollama pull <model>` first."
-- **Other CLIs:** Run `$CLI --version` and verify exit code 0.
-
-### Step 4.5: Select model
-
-Detect available models and present a picker to the user.
-
-**Detection:**
-
-1. If `claude` CLI exists, list Claude models: `opus-4-6`, `sonnet-4-6`, `haiku-4-5`
-2. If `ollama` CLI exists, run `ollama list` and parse the model names from the output
-3. Combine into a single list with the source labeled:
-   ```
-   Available models:
-   [Claude] opus-4-6 (recommended — most capable)
-   [Claude] sonnet-4-6 (faster, lower cost)
-   [Claude] haiku-4-5 (fastest, lowest cost)
-   [Ollama] llama3:latest
-   [Ollama] codellama:latest
-   ...
-   ```
-
-**Present the picker** and ask the user to select. Default to `opus-4-6` if Claude is available.
-
-**Write the selection** into `ralph.sh` by setting these variables near the top of the script:
-- `CLI_TOOL="claude"` or `CLI_TOOL="ollama"`
-- `MODEL="opus-4-6"` (or whatever was selected)
-
-For Claude models, `run_iteration()` should invoke: `echo "$prompt" | claude -p --model "$MODEL" ...`
-For Ollama models: `ollama run "$MODEL" < <(echo "$prompt")`
-
-### Step 5: Validate feedback loops
-
-Ralph without feedback loops produces broken code silently. This is the safety gate — **if feedback loops don't work, ralph.sh will NOT be generated.**
-
-This step does NOT install tooling — it verifies that what's listed in AGENTS.md actually works. Tooling installation is a one-time project setup concern; use `/setup-ralph` for that.
-
-**If AGENTS.md has no Feedback Loops section:** STOP. Tell the user: "AGENTS.md has no feedback loop commands. Run `/setup-ralph` to configure project tooling, then re-run `/ralph-prep`." Do NOT proceed.
-
-Read the `## Feedback Loops` section from AGENTS.md. For each command listed:
-
-1. Run it with a timeout (use `timeout 120` or equivalent to prevent watch-mode hangs).
-2. Record: pass, fail (with errors), command not found, or timed out.
-
-Report results as a table:
-
-```
-| Feedback loop | Command | Result |
-|---------------|---------|--------|
-| Typecheck | npm run typecheck | ✓ passing |
-| Tests | npm test | ✓ 42 passing |
-| Lint | npm run lint | ✗ command not found |
-| Build | npm run build | ✓ success |
-```
-
-**If any command returns "not found":** STOP. Tell the user: "Feedback command `[command]` is listed in AGENTS.md but is not installed. Run `/setup-ralph` to install project tooling before prepping the loop." Do NOT generate ralph.sh.
-
-**If any command times out:** STOP. Tell the user: "`[command]` did not complete within 120 seconds — it may be running in watch mode. Update the command in AGENTS.md to run once and exit (e.g., `vitest run` instead of `vitest`)." Do NOT generate ralph.sh.
-
-**If any command fails (but exists):** Warn: "[Tool] has existing failures. Ralph will try to fix these AND your plan tasks — this may cause confusion. Recommend fixing existing failures first." Let the user decide whether to proceed.
-
-**Auto-fix AGENTS.md:** If the commands in AGENTS.md don't match what actually works (e.g., lists `npm run typecheck` but the real command is `npx tsc --noEmit`), fix AGENTS.md to match reality. This is cleanup, not a blocking issue.
-
-The feedback section should be terse — exact commands only, no explanations:
-
-```markdown
-## Feedback Loops (run before every commit)
-1. Typecheck: `npm run typecheck`
-2. Tests: `npm test`
-3. Lint: `npm run lint`
-4. Build: `npm run build`
-
-Do NOT commit if any of these fail. Fix the failure first.
-Delegate test/build output to 1 subagent — return only pass/fail + failure names and errors.
-```
-
-**Verify AGENTS.md subagent section:** Ensure `AGENTS.md` contains a `## Subagent Rules` section. If missing, add the one from the template above. If present, audit it:
-
-- It should NOT instruct the agent to delegate task selection or implementation decisions
-- It SHOULD instruct the agent to use subagents for codebase search, studying source, and test result summarization
-- Build/test subagents must be capped at 1 (never fan out builds — hundreds of result summaries flood the primary context)
-- It should be 4-8 lines max — terse rules, not explanations
-
-### Step 6: Final readiness report
-
-Present a summary:
+### Report
 
 ```
 ## Ralph Prep — Ready
 
-| Check | Status |
-|-------|--------|
-| Previous run archived | ✓ (archived to archive/ralph-2026-03-15/) |
-| Implementation plan | ✓ (8 tasks, ~1,100 words) |
-| AGENTS.md | ✓ (420 words — under budget) |
-| Loop script | ✓ (ralph.sh — Claude Code CLI) |
-| Model | ✓ (opus-4-6) |
-| CLI auth | ✓ (claude authenticated) |
-| Feedback: typecheck | ✓ (npm run typecheck — passing) |
-| Feedback: tests | ✓ (npm test — 42 passing) |
-| Feedback: lint | ✓ (npm run lint — clean) |
-| Feedback: build | ✓ (npm run build — success) |
+| Check            | Status                                    |
+|------------------|-------------------------------------------|
+| Git repository   | clean working tree on branch main         |
+| Plan             | 12 unchecked tasks in PLAN.md             |
+| Feedback: type   | npm run typecheck — passing                |
+| Feedback: test   | npm test — 42 passing                      |
+| Feedback: lint   | npm run lint — clean                       |
+| Feedback: build  | npm run build — success                    |
+| Loop script      | ralph.sh copied from template              |
 
-Estimated context per iteration: ~3,200 tokens
-  (AGENTS.md: ~600 tokens, plan: ~1,500 tokens, progress.txt: ~200 tokens, prompt: ~900 tokens)
+### How to run:
 
-### Cost estimate
-
-| Model | Est. cost/iteration | Max iterations at $50 budget |
-|-------|--------------------|-----------------------------|
-| opus-4-6 | ~$2-5 | 10-25 |
-| sonnet-4-6 | ~$0.50-1.50 | 33-100 |
-| haiku-4-5 | ~$0.10-0.30 | 166-500 |
-| ollama (local) | $0 | unlimited |
-
-Selected model: [MODEL] → Max safe iterations: [N] (capped at $50)
-
-Write `COST_CAP_ITERATIONS=[N]` into ralph.sh based on the selected model.
-Use the conservative (high) end of the cost estimate to calculate the cap.
-
-### To start:
-  HITL (watch): ./ralph.sh 1
-  AFK (batch):  ./ralph.sh [N]   (capped at [N] iterations / $50)
+  ./ralph.sh           # one iteration, watch live (default)
+  ./ralph.sh 10        # 10 iterations AFK
 ```
 
-If any check fails, mark it with ✗ and explain what needs to be fixed before the loop can run.
+If any check fails, mark it with an X and explain what to fix.
 
-**NEVER execute ralph.sh from this skill.** Ralph-prep's job is to prepare the environment and report readiness. The user starts the loop themselves, in a separate terminal or context window. Automatically launching the loop from within the prep conversation defeats HITL control and wastes the prep context window on execution. If you find yourself about to run `./ralph.sh` — stop. You are done.
+**NEVER execute ralph.sh from this skill.** Prep validates and reports. The user starts the loop in a separate terminal.
 
 ## Troubleshooting
 
-### Problem: No test suite exists
-Ralph without tests is dangerous. Feedback validation (Step 5) will block ralph.sh generation if tests are missing. Tell the user to run `/setup-ralph` to install a test runner and configure feedback loops, then re-run `/ralph-prep`.
+### Not a git repository
+Run `git init && git add -A && git commit -m 'initial commit'` before ralph-prep.
 
-### Problem: AGENTS.md is over 800 words
-Help the user trim it. Common cuts:
-- Remove code style rules (the codebase demonstrates these)
-- Remove architecture explanations (move to a separate doc)
-- Remove tool-specific instructions that the CLI already knows
-- Consolidate verbose sections into terse command lists
+### No test suite / no feedback loops
+Run `/setup-ralph` to install a test runner and configure feedback loops, then re-run `/ralph-prep`.
 
-### Problem: Previous loop script uses a different plan file format
-If an existing loop script references `prd.json`, `TODO.md`, or another format instead of `IMPLEMENTATION_PLAN.md`, Step 4 will archive the old script and generate a fresh `ralph.sh` from the template. The user does not need to intervene — ralph-prep handles this automatically.
-
-### Problem: Docker is not available but user wants AFK mode
-Warn: "AFK mode without Docker runs the agent with full system access. Ensure you have good backups and the agent cannot access sensitive directories. Consider using `--dangerously-skip-permissions` only with a clean git state so you can revert."
+### ralph.sh doesn't work after upgrade
+ralph-prep always copies a fresh template. If it still fails, check that `references/ralph-template.sh` exists in the skill directory.

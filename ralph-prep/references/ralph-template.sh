@@ -1,25 +1,29 @@
 #!/usr/bin/env bash
 # ralph.sh — Autonomous coding loop (Ralph Wiggum pattern)
-# Based on Geoffrey Huntley's methodology
+# Based on Geoffrey Huntley's methodology: https://ghuntley.com/ralph/
 #
 # Usage:
-#   ./ralph.sh [iterations]     # Default: 10 iterations
-#   ./ralph.sh 1                # Single HITL iteration (watch mode)
-#   ./ralph.sh 30               # AFK batch run
+#   ./ralph.sh           # Single HITL iteration (default — watch live)
+#   ./ralph.sh 1         # Same as above
+#   ./ralph.sh 30        # AFK batch run (30 iterations max)
 #
 # Prerequisites:
-#   - IMPLEMENTATION_PLAN.md in project root
-#   - AGENTS.md with feedback loop commands
 #   - Git repo with clean working tree
+#   - PLAN.md with unchecked tasks (- [ ] format)
+#   - AGENTS.md with feedback loop commands
 #
-# Supports: claude, amp, ollama (auto-detected or set CLI= env var)
+# Environment:
+#   CLI=claude|amp|ollama    Override CLI detection
+#   OLLAMA_MODEL=llama3.3   Model for ollama (default: llama3.3)
 
 set -euo pipefail
 
-MAX_ITERATIONS="${1:-10}"
-PLAN_FILE="IMPLEMENTATION_PLAN.md"
+MAX_ITERATIONS="${1:-1}"
+PLAN_FILE="PLAN.md"
 PROGRESS_FILE="progress.txt"
 COMPLETE_SIGNAL="<promise>COMPLETE</promise>"
+ITERATION_LOG=".ralph-iteration.log"
+PROMPT_FILE=".ralph-prompt.tmp"
 
 # --- Detect CLI tool ---
 detect_cli() {
@@ -39,124 +43,133 @@ detect_cli() {
   fi
 }
 
-# --- Detect Docker ---
-detect_docker() {
-  if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
-    echo "true"
-  else
-    echo "false"
-  fi
+# --- Plan parsing (source of truth for format) ---
+#
+# PLAN.md is a numbered checkbox list:
+#   - [x] 1. Completed task description
+#   - [ ] 2. Next task to do
+#   - [ ] 3. Future task
+#
+# extract_next_task: returns the first unchecked line
+# count_done: count checked items
+# count_remaining: count unchecked items
+
+extract_next_task() {
+  grep -m1 '^\- \[ \]' "$PLAN_FILE" || return 1
 }
 
-# --- Build the prompt ---
+count_done() {
+  grep -c '^\- \[x\]' "$PLAN_FILE" 2>/dev/null || echo 0
+}
+
+count_remaining() {
+  grep -c '^\- \[ \]' "$PLAN_FILE" 2>/dev/null || echo 0
+}
+
+# --- Build the prompt (scoped to a SINGLE task) ---
+#
+# Short prompt — AGENTS.md carries project-specific instructions
+# (feedback loops, subagent rules, conventions). This prompt only
+# adds the loop-specific context: which task, progress, and how
+# to mark done.
 build_prompt() {
-  local cli="${1:-claude}"
-
-  # File injection: @file syntax is Claude Code-specific.
-  # Other CLIs need file contents inlined.
-  local file_header
-  if [ "$cli" = "claude" ]; then
-    file_header="@${PLAN_FILE} @${PROGRESS_FILE}"
-  else
-    file_header="$(cat <<FILES
---- BEGIN ${PLAN_FILE} ---
-$(cat "$PLAN_FILE")
---- END ${PLAN_FILE} ---
-
---- BEGIN ${PROGRESS_FILE} ---
-$(cat "$PROGRESS_FILE")
---- END ${PROGRESS_FILE} ---
-FILES
-)"
-  fi
+  local task_line done_count remaining_count progress_content
+  task_line="$(extract_next_task)" || return 1
+  done_count="$(count_done)"
+  remaining_count="$(count_remaining)"
+  progress_content=""
+  [ -f "$PROGRESS_FILE" ] && [ -s "$PROGRESS_FILE" ] && progress_content="$(cat "$PROGRESS_FILE")"
 
   cat <<PROMPT
-${file_header}
+You are Ralph. Complete this one task:
 
-1. Study the IMPLEMENTATION_PLAN.md. Pick the single most important TODO task.
-   Prioritize: blocked dependencies first, then highest priority (P0 > P1 > P2).
+${task_line}
 
-2. Before making changes, search the codebase using parallel subagents.
-   Do NOT assume something is not already implemented.
-   Use subagents to study relevant source files — do NOT read dozens of files
-   directly into this context. Subagents return summaries; raw rg output stays
-   out of the primary window.
-
-3. Implement ONLY that one task in the main context. Keep the change small
-   and focused. The implementation decision and the code itself stay here —
-   do NOT delegate the actual fix to a subagent.
-
-4. Run ALL feedback loops listed in AGENTS.md before committing.
-   Delegate test/build runs to exactly 1 subagent — return only pass/fail
-   and failure names/errors. Do NOT fan out multiple build subagents.
-   Do NOT commit if any check fails. Fix failures first.
-
-5. When all checks pass, make a git commit with a descriptive message
-   referencing the task title.
-
-6. Use a subagent to update IMPLEMENTATION_PLAN.md (set task to DONE)
-   and append to progress.txt. Start each entry with a line containing
-   only: === ITERATION ===
-   Then include:
-   - Task completed and reference
-   - Key decisions made
-   - Files changed
-   - Any blockers or notes for next iteration
-   Keep entries concise. Sacrifice grammar for brevity.
-
-7. If ALL tasks in the plan are DONE, output exactly: ${COMPLETE_SIGNAL}
-
-ONLY WORK ON A SINGLE TASK.
-Subagents are for I/O-heavy recon and parallel writes.
-The main loop is for strategy and implementation.
+Progress: ${done_count} done, ${remaining_count} remaining.
+${progress_content:+
+Previous iterations:
+${progress_content}
+}
+When done:
+1. Change - [ ] to - [x] for your task line (match the number) in PLAN.md.
+2. Commit your changes with a descriptive message.
+3. Append a brief note to progress.txt (what you did, files changed, any blockers).
+   Start each entry with: === ITERATION ===
+4. If ALL tasks in the plan are now done, output exactly: ${COMPLETE_SIGNAL}
+5. STOP. Do not continue to other tasks. The loop handles iteration.
 PROMPT
 }
 
-# --- Run one iteration ---
+# --- Run one iteration with live-streaming output ---
+#
+# Uses 'script' to allocate a pseudo-tty. Without a pty, CLI tools
+# detect they're piped and buffer all output — the human sees nothing
+# until the iteration finishes.
 run_iteration() {
   local cli="$1"
-  local docker_available="$2"
   local prompt
   prompt="$(build_prompt "$cli")"
 
+  : > "$ITERATION_LOG"
+
+  # Write prompt to temp file (avoids argument length limits)
+  printf '%s' "$prompt" > "$PROMPT_FILE"
+
+  local cmd
   case "$cli" in
     claude)
-      if [ "$docker_available" = "true" ] && [ "$MAX_ITERATIONS" -gt 1 ]; then
-        docker sandbox run claude -p "$prompt" \
-          --dangerously-skip-permissions \
-          --output-format=stream-json \
-          --verbose
-      else
-        echo "$prompt" | claude -p \
-          --dangerously-skip-permissions \
-          --verbose
-      fi
+      cmd="claude -p ${CLAUDE_FLAGS:---verbose} < '$PROMPT_FILE'"
       ;;
     amp)
-      echo "$prompt" | amp
+      cmd="amp < '$PROMPT_FILE'"
       ;;
     ollama)
-      # For ollama, pipe through a basic agent harness
-      # Adjust model name as needed
-      echo "$prompt" | ollama run "${OLLAMA_MODEL:-llama3.3}" --nowordwrap
+      cmd="ollama run '${OLLAMA_MODEL:-llama3.3}' --nowordwrap < '$PROMPT_FILE'"
       ;;
     *)
       echo "ERROR: Unsupported CLI: $cli" >&2
       exit 1
       ;;
   esac
+
+  # 'script' wraps the CLI in a pty for live streaming + log capture
+  script -q "$ITERATION_LOG" bash -c "$cmd"
+
+  rm -f "$PROMPT_FILE"
 }
 
 # --- Main loop ---
 main() {
   local cli
   cli="$(detect_cli)"
-  local docker_available
-  docker_available="$(detect_docker)"
 
-  # Preflight checks
-  [ ! -f "$PLAN_FILE" ] && echo "ERROR: $PLAN_FILE not found. Run /plan-to-ralph first." >&2 && exit 1
+  # Preflight: git repo
+  if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "ERROR: Not a git repository. Ralph requires git for commit tracking." >&2
+    echo "  Run: git init && git add -A && git commit -m 'initial commit'" >&2
+    exit 1
+  fi
+
+  # Preflight: clean working tree (warn only)
+  if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    echo "WARNING: Working tree has uncommitted changes. Consider committing first." >&2
+  fi
+
+  # Preflight: plan file
+  if [ ! -f "$PLAN_FILE" ]; then
+    echo "ERROR: $PLAN_FILE not found. Run /plan-to-ralph first." >&2
+    exit 1
+  fi
+
   [ ! -f "AGENTS.md" ] && [ ! -f "CLAUDE.md" ] && echo "WARNING: No AGENTS.md or CLAUDE.md found." >&2
+
+  # Preflight: remaining tasks
+  local remaining
+  remaining="$(count_remaining)"
+  if [ "$remaining" -eq 0 ]; then
+    echo "All tasks are done. Nothing for Ralph to do." >&2
+    exit 0
+  fi
 
   # Create progress file if missing
   [ ! -f "$PROGRESS_FILE" ] && touch "$PROGRESS_FILE"
@@ -167,42 +180,62 @@ main() {
   local branch
   branch="$(git branch --show-current)"
 
+  echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo " Ralph Wiggum Loop"
   echo " CLI:        $cli"
-  echo " Docker:     $docker_available"
   echo " Branch:     $branch"
-  echo " Max tasks:  $MAX_ITERATIONS"
+  echo " Tasks:      $remaining remaining"
+  echo " Iterations: $MAX_ITERATIONS max"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   for ((i = 1; i <= MAX_ITERATIONS; i++)); do
     echo ""
     echo "======================== ITERATION $i / $MAX_ITERATIONS ========================"
+
+    # Show which task is about to run
+    local next_task
+    next_task="$(extract_next_task)"
+    echo "  → $next_task"
     echo ""
 
-    # Record HEAD before iteration for failure detection
-    local head_before
+    # Snapshot state before iteration
+    local done_before head_before
+    done_before="$(count_done)"
     head_before="$(git rev-parse HEAD)"
 
-    local result
-    result="$(run_iteration "$cli" "$docker_available")"
-    echo "$result"
+    # Run iteration — output streams live via pseudo-tty
+    run_iteration "$cli"
 
-    # Detect failed iterations (no commit produced)
+    echo ""
+    echo "--- Post-iteration checks ---"
+
+    # One-task enforcement: check DONE delta
+    local done_after done_delta
+    done_after="$(count_done)"
+    done_delta=$((done_after - done_before))
+
+    if [ "$done_delta" -eq 0 ]; then
+      echo "⚠  No task was completed this iteration."
+      echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) iteration=$i no-task-completed" >> ralph-failures.log
+    elif [ "$done_delta" -gt 1 ]; then
+      echo "✗  $done_delta tasks marked done (expected 1). Review carefully."
+      echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) iteration=$i multi-task-violation done_delta=$done_delta" >> ralph-failures.log
+    else
+      echo "✓  Task completed. ($done_after / $((done_after + $(count_remaining))) done)"
+    fi
+
+    # Detect no-commit iterations
     local head_after
     head_after="$(git rev-parse HEAD)"
     if [ "$head_before" = "$head_after" ]; then
-      local dirty
-      dirty="$(git status --porcelain 2>/dev/null)"
-      if [ -n "$dirty" ]; then
+      if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+        echo "⚠  Changes exist but no commit was made."
         echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) iteration=$i uncommitted-changes" >> ralph-failures.log
-      else
-        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) iteration=$i no-change" >> ralph-failures.log
       fi
     fi
 
     # Sliding window: keep only the last 3 progress blocks
-    # Each block starts with "=== ITERATION ==="
     local block_count
     block_count="$(grep -c '^=== ITERATION ===$' "$PROGRESS_FILE" 2>/dev/null || echo 0)"
     if [ "$block_count" -gt 3 ]; then
@@ -213,24 +246,37 @@ main() {
       ' "$PROGRESS_FILE" > "${PROGRESS_FILE}.tmp" && mv "${PROGRESS_FILE}.tmp" "$PROGRESS_FILE"
     fi
 
-    # Push after each iteration
-    git push origin "$branch" 2>/dev/null || true
-
     # Check for completion signal
-    if [[ "$result" == *"$COMPLETE_SIGNAL"* ]]; then
+    if grep -q "$COMPLETE_SIGNAL" "$ITERATION_LOG" 2>/dev/null; then
       echo ""
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       echo " All tasks complete. Ralph is done."
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      git push origin "$branch" 2>/dev/null || true
       exit 0
     fi
+
+    # Check remaining
+    remaining="$(count_remaining)"
+    if [ "$remaining" -eq 0 ]; then
+      echo ""
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo " All tasks marked done. Loop complete."
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      git push origin "$branch" 2>/dev/null || true
+      exit 0
+    fi
+
+    echo "$remaining tasks remaining."
+    echo ""
   done
 
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo " Reached max iterations ($MAX_ITERATIONS)."
-  echo " Check IMPLEMENTATION_PLAN.md for remaining tasks."
+  echo " Check $PLAN_FILE for remaining tasks."
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  git push origin "$branch" 2>/dev/null || true
 }
 
 main "$@"

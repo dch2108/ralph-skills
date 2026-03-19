@@ -18,5 +18,5 @@ Do NOT run AFK (multi-iteration) without the user watching.
 - Delegate file reads to subagents — keep raw file contents out of primary context
 - Use subagents to study existing SKILL.md files before modifying them
 - Parallel subagents OK for independent file writes
-- Use a subagent to update IMPLEMENTATION_PLAN.md and progress.txt after each task
+- Use a subagent to update PLAN.md and progress.txt after each task
 - Do NOT delegate: task selection, implementation decisions, or the core edit itself
