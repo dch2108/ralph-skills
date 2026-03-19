@@ -9,3 +9,13 @@ Task 2: Expanded build_prompt() with remaining-tasks summary and guardrails
 Files changed: ralph-prep/references/ralph-template.sh, PLAN.md, progress.txt
 Prompt now shows all remaining tasks, highlights the current task, and includes 5 guardrails (codebase search, subagent rules, no placeholders, BACKLOG.md, AGENTS.md).
 No blockers.
+=== ITERATION ===
+Task 3: Synced remaining_tasks_summary() and build_prompt() from ralph-template.sh to root ralph.sh
+Files changed: ralph.sh, PLAN.md
+Added remaining_tasks_summary() function and updated build_prompt() with remaining-tasks summary, guardrails (codebase search, subagent rules, no placeholders, BACKLOG.md, AGENTS.md).
+No blockers.
+=== ITERATION ===
+Task 4: Added MODEL environment variable to ralph-template.sh and ralph.sh
+Files changed: ralph-prep/references/ralph-template.sh, ralph.sh, PLAN.md, progress.txt
+MODEL env var passes --model $MODEL to claude CLI, or overrides ollama model name. Defaults to empty (CLI default). Header comment updated to document MODEL alongside CLI, OLLAMA_MODEL, and CLAUDE_FLAGS. Startup banner shows active model.
+No blockers.

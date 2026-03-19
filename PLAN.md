@@ -6,7 +6,7 @@
 
 - [x] 3. Mirror the expanded prompt in the root ralph.sh (which is the copy that ships with the repo for testing). After modifying ralph-template.sh, copy the updated `remaining_tasks_summary()` and `build_prompt()` functions into ralph.sh so both files stay in sync.
 
-- [ ] 4. Add a `MODEL` environment variable to ralph-template.sh (and ralph.sh). Default to empty (uses CLI default). When set, pass it as `--model $MODEL` for claude CLI, or as the model name for ollama. Update the header comment to document it alongside `CLI` and `CLAUDE_FLAGS`. This lets the user do `MODEL=opus ./ralph.sh plan 5` or `MODEL=sonnet ./ralph.sh 10`.
+- [x] 4. Add a `MODEL` environment variable to ralph-template.sh (and ralph.sh). Default to empty (uses CLI default). When set, pass it as `--model $MODEL` for claude CLI, or as the model name for ollama. Update the header comment to document it alongside `CLI` and `CLAUDE_FLAGS`. This lets the user do `MODEL=opus ./ralph.sh plan 5` or `MODEL=sonnet ./ralph.sh 10`.
 
 - [ ] 5. Add git-tag-on-clean logic to the post-iteration checks in ralph-template.sh (and ralph.sh). After the done-delta check and no-commit check, if the iteration completed successfully (delta == 1 and new commit exists), run the project's feedback loop commands from AGENTS.md. If all pass, create an incremental semver patch tag (read latest tag with `git describe --tags --abbrev=0`, increment patch, `git tag`). If no tags exist, start at `v0.0.1`. This is a script-level check, not a prompt instruction — Ralph doesn't need to think about tagging.
 

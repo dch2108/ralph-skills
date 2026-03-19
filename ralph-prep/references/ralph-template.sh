@@ -14,7 +14,9 @@
 #
 # Environment:
 #   CLI=claude|amp|ollama    Override CLI detection
-#   OLLAMA_MODEL=llama3.3   Model for ollama (default: llama3.3)
+#   MODEL=<model>            Model override (--model for claude, model name for ollama)
+#   OLLAMA_MODEL=llama3.3   Model for ollama (default: llama3.3, overridden by MODEL)
+#   CLAUDE_FLAGS=<flags>     Extra flags passed to claude CLI
 
 set -euo pipefail
 
@@ -141,13 +143,13 @@ run_iteration() {
   local cmd
   case "$cli" in
     claude)
-      cmd="claude --dangerously-skip-permissions -p ${CLAUDE_FLAGS:-} < '$PROMPT_FILE'"
+      cmd="claude --dangerously-skip-permissions -p${MODEL:+ --model $MODEL} ${CLAUDE_FLAGS:-} < '$PROMPT_FILE'"
       ;;
     amp)
       cmd="amp < '$PROMPT_FILE'"
       ;;
     ollama)
-      cmd="ollama run '${OLLAMA_MODEL:-llama3.3}' --nowordwrap < '$PROMPT_FILE'"
+      cmd="ollama run '${MODEL:-${OLLAMA_MODEL:-llama3.3}}' --nowordwrap < '$PROMPT_FILE'"
       ;;
     *)
       echo "ERROR: Unsupported CLI: $cli" >&2
@@ -207,6 +209,7 @@ main() {
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo " Ralph Wiggum Loop"
   echo " CLI:        $cli"
+  echo " Model:      ${MODEL:-default}"
   echo " Branch:     $branch"
   echo " Tasks:      $remaining remaining"
   echo " Iterations: $MAX_ITERATIONS max"
