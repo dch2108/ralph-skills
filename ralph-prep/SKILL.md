@@ -1,8 +1,6 @@
 ---
 name: ralph-prep
-metadata:
-  version: '2.3'
-  author: dch2108
+disable-model-invocation: true
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.
   Validates prerequisites, copies the loop script, and reports readiness.
@@ -82,21 +80,11 @@ Always copy the canonical template to the project root. This ensures v1→v2 mig
 **CRITICAL:** The template lives in the ralph-prep skill directory, NOT in the target project. You must resolve the path through the skill installation.
 
 ```bash
-# Find the template — try multiple known locations
-TEMPLATE=""
-for candidate in \
-  ~/.claude/skills/ralph-prep/references/ralph-template.sh \
-  ~/.claude/skills/ralph-skills/ralph-prep/references/ralph-template.sh \
-  .claude/skills/ralph-prep/references/ralph-template.sh \
-  .claude/skills/ralph-skills/ralph-prep/references/ralph-template.sh; do
-  if [ -f "$candidate" ]; then
-    TEMPLATE="$candidate"
-    break
-  fi
-done
+TEMPLATE="${CLAUDE_SKILL_DIR}/references/ralph-template.sh"
 
-if [ -z "$TEMPLATE" ]; then
-  echo "ERROR: Cannot find ralph-template.sh. Re-run: cd ~/.claude/skills/ralph-skills && ./setup"
+if [ ! -f "$TEMPLATE" ]; then
+  echo "ERROR: Cannot find ralph-template.sh at $TEMPLATE"
+  echo "Re-run: cd ~/.claude/skills/ralph-skills && ./setup"
   # STOP — do not continue without the template
 fi
 

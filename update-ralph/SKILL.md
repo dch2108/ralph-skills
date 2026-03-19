@@ -1,8 +1,5 @@
 ---
 name: update-ralph
-metadata:
-  version: '2.3'
-  author: dch2108
 description: >
   Update ralph-skills to the latest version from GitHub. Pulls the latest
   changes, re-runs setup to fix symlinks, and reports the new version numbers.
@@ -36,25 +33,22 @@ rm -rf .claude/skills/ralph-skills/.git
 cd .claude/skills/ralph-skills && ./setup
 ```"
 
-### Step 3: Read current versions
+### Step 3: Record current state
 
-Before pulling, read the `metadata.version` from each skill's `SKILL.md` frontmatter:
-- `plan-to-ralph/SKILL.md`
-- `ralph-prep/SKILL.md`
-- `setup-ralph/SKILL.md`
-- `update-ralph/SKILL.md`
-
-Record these as "before" versions.
+Before pulling, record the current git SHA:
+```bash
+cd ~/.claude/skills/ralph-skills && git rev-parse --short HEAD
+```
 
 ### Step 4: Pull latest
 
 ```bash
-cd ~/.claude/skills/ralph-skills && git pull origin main
+cd ~/.claude/skills/ralph-skills && git pull
 ```
 
 If this fails due to local changes, stash them first:
 ```bash
-git stash && git pull origin main
+git stash && git pull
 ```
 
 ### Step 5: Re-run setup
@@ -65,23 +59,25 @@ cd ~/.claude/skills/ralph-skills && ./setup
 
 This ensures any new skills get symlinked and any removed skills get cleaned up.
 
-### Step 6: Read new versions
+### Step 6: Check what changed
 
-Read the `metadata.version` from each skill's `SKILL.md` again. Compare with "before" versions.
+```bash
+git log --oneline <before-sha>..HEAD
+```
 
 ### Step 7: Report
 
 ```
 ## ralph-skills updated
 
-| Skill | Before | After |
+| | Before | After |
 |-------|--------|-------|
-| plan-to-ralph | 1.0 | 1.1 |
-| ralph-prep | 1.0 | 1.1 |
-| setup-ralph | 1.0 | 1.1 |
-| update-ralph | 1.0 | 1.1 |
+| Commit | abc1234 | def5678 |
 
-Changes pulled. Symlinks refreshed. Run /context to verify.
+### Changes:
+- <one-line per commit since last update>
+
+Symlinks refreshed. Run /context to verify.
 ```
 
-If all versions are the same, report: "Already up to date (all skills at version X.Y)."
+If the SHA is the same, report: "Already up to date."

@@ -109,7 +109,7 @@ extract_feedback_commands() {
 # If no tags exist, starts at v0.0.1.
 next_patch_tag() {
   local latest
-  latest="$(git describe --tags --abbrev=0 2>/dev/null)" || true
+  latest="$(git tag -l 'v*' | sort -V | tail -1 2>/dev/null)" || true
   if [ -z "$latest" ]; then
     echo "v0.0.1"
     return
@@ -313,7 +313,7 @@ main() {
     # One-task enforcement: check DONE delta
     local done_after done_delta
     done_after="$(count_done)"
-    done_delta=$((done_after - done_before))
+    done_delta=$(( ${done_after:-0} - ${done_before:-0} ))
 
     if [ "$done_delta" -eq 0 ]; then
       echo "⚠  No task was completed this iteration."

@@ -1,8 +1,6 @@
 ---
 name: setup-ralph
-metadata:
-  version: '2.3'
-  author: dch2108
+disable-model-invocation: true
 description: >
   Install and configure feedback loop tooling (typechecker, linter, test runner,
   build command) for a project. Run once per project to set up the backpressure

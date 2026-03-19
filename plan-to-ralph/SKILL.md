@@ -1,8 +1,7 @@
 ---
 name: plan-to-ralph
-metadata:
-  version: '2.3'
-  author: dch2108
+disable-model-invocation: true
+argument-hint: '[input-file or paste text]'
 description: >
   Convert code review findings, bug reports, and implementation issues into a
   Ralph-ready PLAN.md. Use when the user says "create a plan from this review",
@@ -42,7 +41,7 @@ If the input is ambiguous, ask the user to clarify scope. Do NOT guess at issues
 Break input into small, single-commit tasks. Follow these rules:
 
 - **One logical change per task.** A task can touch multiple files but represents one conceptual unit.
-- **Target 8-15 tasks.** Fewer than 6 = tasks are almost certainly too big. Go back and split.
+- **Target 8-15 tasks for large changes.** If fewer than 6, verify each task is truly atomic — don't split just to hit a count. A 3-task plan is fine if each task is genuinely one logical change.
 - **Each task: 1-2 sentences.** If you need more to describe it, the task is too big — split it.
 - **No "and" connecting distinct work.** "Add validation and update the error messages" is two tasks.
 - **~150 lines of new code max per task.** If you can envision more, split.
