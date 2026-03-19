@@ -14,4 +14,4 @@
 
 - [x] 7. Update the root README.md to document: (a) the `MODEL` env var in the environment variables section, (b) the remaining-tasks summary feature under "The loop script" section, (c) the auto-tagging behavior, (d) the new prompt guardrails (subagent usage, no-placeholders, AGENTS.md self-improvement, BACKLOG.md bug capture) under a "Prompt guardrails" subsection of Principles.
 
-- [ ] 8. Bump `metadata.version` in all four SKILL.md frontmatters to '2.3' and add a v2.3 entry to CHANGELOG.md summarizing: expanded prompt with situational awareness and guardrails, MODEL env var, auto git tagging on clean feedback, AGENTS.md self-improvement instruction, BACKLOG.md bug capture instruction.
+- [x] 8. Bump `metadata.version` in all four SKILL.md frontmatters to '2.3' and add a v2.3 entry to CHANGELOG.md summarizing: expanded prompt with situational awareness and guardrails, MODEL env var, auto git tagging on clean feedback, AGENTS.md self-improvement instruction, BACKLOG.md bug capture instruction.

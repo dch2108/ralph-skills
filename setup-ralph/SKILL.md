@@ -1,7 +1,7 @@
 ---
 name: setup-ralph
 metadata:
-  version: '1.1'
+  version: '2.3'
   author: dch2108
 description: >
   Install and configure feedback loop tooling (typechecker, linter, test runner,

@@ -1,7 +1,7 @@
 ---
 name: update-ralph
 metadata:
-  version: '1.1'
+  version: '2.3'
   author: dch2108
 description: >
   Update ralph-skills to the latest version from GitHub. Pulls the latest

@@ -1,7 +1,7 @@
 ---
 name: ralph-prep
 metadata:
-  version: '2.2'
+  version: '2.3'
   author: dch2108
 description: >
   Prepare the environment for a new Ralph Wiggum autonomous coding loop.

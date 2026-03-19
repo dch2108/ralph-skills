@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.3 — 2026-03-19
+
+Smarter prompt, better defaults, automatic tagging.
+
+### Added
+- **Situational awareness** — prompt now includes a summary of all remaining tasks so Ralph understands the full landscape before starting each iteration
+- **Prompt guardrails** — five new single-line rules: search-before-assuming, subagent budget (1 for builds, parallel for reads), no-placeholders, BACKLOG.md bug capture, AGENTS.md self-improvement
+- **`MODEL` env var** — set `MODEL=opus` or `MODEL=sonnet` to override the default model for both Claude CLI and Ollama
+- **Auto git tagging on clean feedback** — after a successful iteration, runs feedback loop commands from AGENTS.md; if all pass, creates an incremental semver patch tag (starts at `v0.0.1`)
+- **AGENTS.md self-improvement instruction** — prompt tells Ralph to update AGENTS.md when it learns new build/test/run commands
+- **BACKLOG.md bug capture instruction** — prompt tells Ralph to document unrelated bugs in BACKLOG.md instead of fixing them mid-task
+
 ## v2.0 — 2026-03-18
 
 Complete rewrite. v1 over-formalized Huntley's methodology into a 30KB bureaucratic wizard. v2 returns to the source: simple, fast, operator-driven.

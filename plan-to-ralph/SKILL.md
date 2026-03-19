@@ -1,7 +1,7 @@
 ---
 name: plan-to-ralph
 metadata:
-  version: '2.0'
+  version: '2.3'
   author: dch2108
 description: >
   Convert code review findings, bug reports, and implementation issues into a
